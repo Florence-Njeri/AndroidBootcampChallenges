@@ -4,4 +4,6 @@
     <string name="timeLeft">Time left: %1$d</string>
     <string name="tap_me">Tap Me!</string>
     <string name="game_over_message">Time is up! Your score was %1$d</string>
+    <string name="aboutTitle">Time Fighter</string>
+    <string name="aboutMessage">Created by Florence Njeri</string>
 </resources>
