@@ -1,9 +1,13 @@
-package com.florencenjeri.listmaker
+package com.florencenjeri.listmaker.ui
 
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.florencenjeri.listmaker.R
+import com.florencenjeri.listmaker.adapter.ToDoListAdapter
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 
