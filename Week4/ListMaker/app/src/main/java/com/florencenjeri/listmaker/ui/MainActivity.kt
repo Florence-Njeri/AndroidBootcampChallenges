@@ -7,6 +7,8 @@ import android.view.MenuItem
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.R
 import com.florencenjeri.listmaker.adapter.ToDoListAdapter
 import com.florencenjeri.listmaker.data.ListDataManager
@@ -14,6 +16,7 @@ import com.florencenjeri.listmaker.data.TaskList
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 class MainActivity : AppCompatActivity() {
+    lateinit var todoList: RecyclerView
     lateinit var dataManager: ListDataManager
     lateinit var lists: ArrayList<TaskList>
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,6 +25,10 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(findViewById(R.id.toolbar))
         dataManager = ListDataManager(this)
         lists = dataManager.readLists()
+
+        todoList = findViewById(R.id.todoListRecyclerView)
+        todoList.layoutManager = LinearLayoutManager(this)
+        todoList.adapter = ToDoListAdapter(lists)
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { _ ->
             showCreateTodoListDialog()
         }
@@ -67,4 +74,6 @@ class MainActivity : AppCompatActivity() {
         myDialog.create().show()
 
     }
+
+    private fun
 }
