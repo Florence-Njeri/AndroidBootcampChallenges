@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.R
 import com.florencenjeri.listmaker.adapter.ToDoListAdapter
+import com.florencenjeri.listmaker.data.ListDataManager
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -21,17 +22,12 @@ class FirstFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val view = inflater.inflate(R.layout.fragment_first, container, false)
+        val dataManager = context?.let { ListDataManager(it) }
+        val list = dataManager?.readLists()
         todoList = view.findViewById(R.id.todoListRecyclerView)
-        todoList.layoutManager= LinearLayoutManager(context)
-        todoList.adapter = ToDoListAdapter()
+        todoList.layoutManager = LinearLayoutManager(context)
+        todoList.adapter = ToDoListAdapter(list)
         return view
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-      //TODO: To implement
-//            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
-
-    }
 }
