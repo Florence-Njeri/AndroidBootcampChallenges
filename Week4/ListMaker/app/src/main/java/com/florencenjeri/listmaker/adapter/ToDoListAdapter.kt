@@ -33,7 +33,9 @@ class ToDoListAdapter(
         //Update the ViewData on scroll
         holder.listPositionTextView.text = (position + 1).toString()
         holder.listTitleTextView.text = lists[position].name
-        clickListener.listItemClicked(lists[position])
+        holder.itemView.setOnClickListener {
+            clickListener.listItemClicked(lists[position])
+        }
 
     }
 

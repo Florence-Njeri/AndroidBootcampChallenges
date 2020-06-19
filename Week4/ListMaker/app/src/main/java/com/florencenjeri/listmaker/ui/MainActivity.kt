@@ -103,6 +103,6 @@ class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener 
     }
 
     override fun listItemClicked(list: TaskList) {
-        showTaskListItems(list)
+//        showTaskListItems(list)
     }
 }
