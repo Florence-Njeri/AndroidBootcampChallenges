@@ -8,17 +8,13 @@ import android.view.MenuItem
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.R
-import com.florencenjeri.listmaker.adapter.ToDoListAdapter
-import com.florencenjeri.listmaker.data.ListDataManager
+import com.florencenjeri.listmaker.TodoListFragment
 import com.florencenjeri.listmaker.data.TaskList
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener {
-    lateinit var todoList: RecyclerView
-    var dataManager = ListDataManager(this)
+class MainActivity : AppCompatActivity(), TodoListFragment.OnFragmentInteractionListener {
+    private var todoListFragment = TodoListFragment.newInstance()
 
     companion object {
         const val INTENT_LIST_KEY = "list"
@@ -29,14 +25,11 @@ class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
-        val lists = dataManager.readLists()
 
-        todoList = findViewById(R.id.todoListRecyclerView)
-        todoList.layoutManager = LinearLayoutManager(this)
-        todoList.adapter = ToDoListAdapter(lists, this)
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { _ ->
             showCreateTodoListDialog()
         }
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -60,16 +53,11 @@ class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener 
         if (requestCode == LIST_DETAILS_REQUEST_CODE) {
             data?.let {
                 val list = data.getParcelableExtra<TaskList>(INTENT_LIST_KEY)!!
-                dataManager.saveList(list)
-                updateList()
+                todoListFragment.saveList(list)
             }
         }
     }
 
-    private fun updateList() {
-        val lists = dataManager.readLists()
-        todoList.adapter = ToDoListAdapter(lists, this)
-    }
 
     private fun showCreateTodoListDialog() {
         val dialogTitle = getString(R.string.name_of_list)
@@ -84,10 +72,9 @@ class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener 
         myDialog.setView(todoTitleEditText)
 
         myDialog.setPositiveButton(positiveButtonTitle) { dialog, _ ->
-            val adapter = todoList.adapter as ToDoListAdapter
+
             val list = TaskList(todoTitleEditText.text.toString())
-            dataManager.saveList(list)
-            adapter.addList(list)
+            todoListFragment.addList(list)
             dialog.dismiss()
             showTaskListItems(list)
         }
@@ -102,7 +89,7 @@ class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener 
         startActivityForResult(taskListItem, LIST_DETAILS_REQUEST_CODE)
     }
 
-    override fun listItemClicked(list: TaskList) {
+    override fun onTodoListClicked(list: TaskList) {
         showTaskListItems(list)
     }
 }
