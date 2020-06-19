@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.adapter.TaskListAdapter
 import com.florencenjeri.listmaker.data.TaskList
-import kotlinx.android.synthetic.main.activity_detail.*
+import kotlinx.android.synthetic.main.fragment_detail.*
 
 class TaskDetailFragment : Fragment() {
     lateinit var list: TaskList
