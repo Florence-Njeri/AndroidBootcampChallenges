@@ -1,5 +1,6 @@
 package com.florencenjeri.listmaker.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.InputType
 import android.view.Menu
@@ -19,6 +20,11 @@ class MainActivity : AppCompatActivity() {
     lateinit var todoList: RecyclerView
     lateinit var dataManager: ListDataManager
     lateinit var lists: ArrayList<TaskList>
+
+    companion object {
+        private const val INTENT_LIST_KEY = "list"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -75,5 +81,9 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    private fun
+    private fun showTaskListItems(list: TaskList) {
+        val taskListItem = Intent(this, DetailActivity::class.java)
+        taskListItem.putExtra(INTENT_LIST_KEY, lists)
+        startActivity(taskListItem)
+    }
 }
