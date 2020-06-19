@@ -9,6 +9,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.adapter.ToDoListAdapter
@@ -54,10 +55,6 @@ class TodoListFragment : Fragment(), ToDoListAdapter.TodoListClickListener {
 
     }
 
-    interface OnFragmentInteractionListener {
-        fun onTodoListClicked(list: TaskList)
-    }
-
     companion object {
 
         fun newInstance(): TodoListFragment {
@@ -67,6 +64,7 @@ class TodoListFragment : Fragment(), ToDoListAdapter.TodoListClickListener {
     }
 
     override fun listItemClicked(list: TaskList) {
+        showTaskListItems(list)
     }
 
     private fun showCreateTodoListDialog() {
@@ -97,7 +95,11 @@ class TodoListFragment : Fragment(), ToDoListAdapter.TodoListClickListener {
     }
 
     private fun showTaskListItems(list: TaskList) {
-
+        view?.let {
+            val action =
+                TodoListFragmentDirections.actionTodoListFragmentToTaskDetailFragment(list.name)
+            it.findNavController().navigate(action)
+        }
     }
 
     fun addList(list: TaskList) {

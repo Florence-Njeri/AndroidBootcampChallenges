@@ -8,22 +8,19 @@ import android.view.ViewGroup
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.florencenjeri.listmaker.adapter.TaskListAdapter
+import com.florencenjeri.listmaker.data.ListDataManager
 import com.florencenjeri.listmaker.data.TaskList
+import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_detail.*
 
 class TaskDetailFragment : Fragment() {
     lateinit var list: TaskList
     lateinit var taskListRecyclerView: RecyclerView
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments.let {
-            list = it?.getParcelable(ARG_LIST)!!
-        }
-
-    }
+    lateinit var listDataManager: ListDataManager
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,17 +32,26 @@ class TaskDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        //Get data passed using the arguments
+        listDataManager = ViewModelProviders.of(this).get(ListDataManager::class.java)
 
+        arguments?.let {
+            val args = TaskDetailFragmentArgs.fromBundle(it)
+            list =
+                listDataManager.readLists().filter { list -> list.name == args.task }[0]
+        }
         taskListRecyclerView = view.findViewById(R.id.task_list_recyclerview)
-        activity.let {
-            it?.title = list.name
+        activity?.let {
+            taskListRecyclerView = view.findViewById(R.id.task_list_recyclerview)
             taskListRecyclerView.layoutManager = LinearLayoutManager(it)
+            taskListRecyclerView.adapter = TaskListAdapter(list)
+            it.toolbar.title = list.name
+            add_tasks_button.setOnClickListener {
+                setCreateTaskDialog()
+            }
         }
 
-        taskListRecyclerView.adapter = TaskListAdapter(list)
-        add_tasks_button.setOnClickListener {
-            setCreateTaskDialog()
-        }
+
     }
 
     companion object {
@@ -72,6 +78,7 @@ class TaskDetailFragment : Fragment() {
                 .setPositiveButton(R.string.add_task) { dialog, _ ->
                     val task = taskEditText.text.toString()
                     list.tasks.add(task)
+                    listDataManager.saveList(list)
                     dialog.dismiss()
                 }
                 .create()
