@@ -16,25 +16,24 @@ import com.florencenjeri.listmaker.data.ListDataManager
 import com.florencenjeri.listmaker.data.TaskList
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), ToDoListAdapter.TodoListClickListener {
     lateinit var todoList: RecyclerView
-    lateinit var dataManager: ListDataManager
-    lateinit var lists: ArrayList<TaskList>
+    var dataManager = ListDataManager(this)
 
     companion object {
-        private const val INTENT_LIST_KEY = "list"
+        const val INTENT_LIST_KEY = "list"
+        const val LIST_DETAILS_REQUEST_CODE = 1234
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById(R.id.toolbar))
-        dataManager = ListDataManager(this)
-        lists = dataManager.readLists()
+        val lists = dataManager.readLists()
 
         todoList = findViewById(R.id.todoListRecyclerView)
         todoList.layoutManager = LinearLayoutManager(this)
-        todoList.adapter = ToDoListAdapter(lists)
+        todoList.adapter = ToDoListAdapter(lists, this)
         findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { _ ->
             showCreateTodoListDialog()
         }
@@ -56,10 +55,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == LIST_DETAILS_REQUEST_CODE) {
+            data?.let {
+                val list = data.getParcelableExtra<TaskList>(INTENT_LIST_KEY)!!
+                dataManager.saveList(list)
+                updateList()
+            }
+        }
+    }
+
+    private fun updateList() {
+        val lists = dataManager.readLists()
+        todoList.adapter = ToDoListAdapter(lists, this)
+    }
+
     private fun showCreateTodoListDialog() {
         val dialogTitle = getString(R.string.name_of_list)
         val positiveButtonTitle = getString(R.string.create_list)
-        val negativeButtonTitle = getString(R.string.cancel_list_creation)
         val myDialog = AlertDialog.Builder(this)
 
         val todoTitleEditText = EditText(this)
@@ -70,11 +84,12 @@ class MainActivity : AppCompatActivity() {
         myDialog.setView(todoTitleEditText)
 
         myDialog.setPositiveButton(positiveButtonTitle) { dialog, _ ->
-            val adapter = ToDoListAdapter(lists)
+            val adapter = todoList.adapter as ToDoListAdapter
             val list = TaskList(todoTitleEditText.text.toString())
             dataManager.saveList(list)
             adapter.addList(list)
             dialog.dismiss()
+            showTaskListItems(list)
         }
 
         myDialog.create().show()
@@ -83,7 +98,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTaskListItems(list: TaskList) {
         val taskListItem = Intent(this, DetailActivity::class.java)
-        taskListItem.putExtra(INTENT_LIST_KEY, lists)
-        startActivity(taskListItem)
+        taskListItem.putExtra(INTENT_LIST_KEY, list)
+        startActivityForResult(taskListItem, LIST_DETAILS_REQUEST_CODE)
+    }
+
+    override fun listItemClicked(list: TaskList) {
+        showTaskListItems(list)
     }
 }
