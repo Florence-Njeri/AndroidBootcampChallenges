@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2020 Razeware LLC
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,11 +35,13 @@
 package com.raywenderlich.android.taskie.ui.login
 
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.R
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
+import com.raywenderlich.android.taskie.networking.NetworkStatusChecker
 import com.raywenderlich.android.taskie.networking.RemoteApi
 import com.raywenderlich.android.taskie.ui.main.MainActivity
 import com.raywenderlich.android.taskie.ui.register.RegisterActivity
@@ -52,45 +54,51 @@ import kotlinx.android.synthetic.main.activity_login.*
  */
 class LoginActivity : AppCompatActivity() {
 
-  private val remoteApi = RemoteApi()
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_login)
-    initUi()
-  }
-
-  private fun initUi() {
-    login.setOnClickListener {
-      val email = emailInput.text.toString()
-      val password = passwordInput.text.toString()
-
-      if (email.isNotBlank() && password.isNotBlank()) {
-        logUserIn(UserDataRequest(email, password))
-      } else {
-        showLoginError()
-      }
+    private val remoteApi = RemoteApi()
+    private val networkStatusChecker by lazy { NetworkStatusChecker(getSystemService(ConnectivityManager::class.java)) }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_login)
+        initUi()
     }
-    register.setOnClickListener { startActivity(Intent(this, RegisterActivity::class.java)) }
-  }
 
-  private fun logUserIn(userDataRequest: UserDataRequest) {
-    remoteApi.loginUser(userDataRequest) { token: String?, throwable: Throwable? ->
-      if (token != null && token.isNotBlank()) {
-        onLoginSuccess(token)
-      } else if (throwable != null) {
-        showLoginError()
-      }
+    private fun initUi() {
+        login.setOnClickListener {
+            val email = emailInput.text.toString()
+            val password = passwordInput.text.toString()
+
+            if (email.isNotBlank() && password.isNotBlank()) {
+                logUserIn(UserDataRequest(email, password))
+            } else {
+                showLoginError()
+            }
+        }
+        register.setOnClickListener { startActivity(Intent(this, RegisterActivity::class.java)) }
     }
-  }
 
-  private fun onLoginSuccess(token: String) {
-    errorText.gone()
-    App.saveToken(token)
-    startActivity(MainActivity.getIntent(this))
-  }
+    private fun logUserIn(userDataRequest: UserDataRequest) {
+        networkStatusChecker.performIfConnectedToTheInternet {
+            remoteApi.loginUser(userDataRequest) { token: String?, throwable: Throwable? ->
+                runOnUiThread {
+                    if (token != null && token.isNotBlank()) {
+                        onLoginSuccess(token)
+                    } else if (throwable != null) {
+                        showLoginError()
+                    }
+                }
 
-  private fun showLoginError() {
-    errorText.visible()
-  }
+            }
+        }
+
+    }
+
+    private fun onLoginSuccess(token: String) {
+        errorText.gone()
+        App.saveToken(token)
+        startActivity(MainActivity.getIntent(this))
+    }
+
+    private fun showLoginError() {
+        errorText.visible()
+    }
 }
