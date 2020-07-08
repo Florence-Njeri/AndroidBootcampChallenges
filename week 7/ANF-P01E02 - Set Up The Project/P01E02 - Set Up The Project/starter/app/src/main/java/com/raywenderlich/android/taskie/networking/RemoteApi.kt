@@ -34,6 +34,7 @@
 
 package com.raywenderlich.android.taskie.networking
 
+import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.model.UserProfile
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
@@ -178,6 +179,59 @@ class RemoteApi {
     }
 
     fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Task?, Throwable?) -> Unit) {
+        Thread(Runnable {
+            val connection = URL("$BASE_URL/api/note").openConnection() as HttpURLConnection
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Authorization", App.getToken())
+            connection.readTimeout = 10000
+            connection.connectTimeout = 10000
+            connection.doOutput = true
+            connection.doInput = true
+
+            val requestJson = JSONObject()
+            requestJson.put("title", addTaskRequest.title)
+            requestJson.put("content", addTaskRequest.content)
+            requestJson.put("taskPriority", addTaskRequest.taskPriority)
+
+            val body = requestJson.toString()
+            val bytes = body.toByteArray()
+
+            try {
+                connection.outputStream.use {
+                    it.write(bytes)
+                }
+                //Read the response
+                val reader = InputStreamReader(connection.inputStream)
+                reader.use { input ->
+                    val response = StringBuilder()
+                    val bufferedReader = BufferedReader(input)
+
+                    bufferedReader.useLines { lines ->
+                        lines.forEach {
+                            response.append(it.trim())
+                        }
+
+                    }
+                    //Send the data back to the callback
+                    val jsonResponse = JSONObject(response.toString())
+
+                    val id = jsonResponse.getString("id")
+                    val userId = jsonResponse.getString("userId")
+                    val title = jsonResponse.getString("title")
+                    val content = jsonResponse.getString("content")
+                    val isCompleted = jsonResponse.getBoolean("isCompleted")
+                    val taskPriority = jsonResponse.getInt("taskPriority")
+                    val task = Task(id,title,content,isCompleted,taskPriority)
+                    onTaskCreated(task,null)
+                }
+            } catch (error: Throwable) {
+                onTaskCreated(null, error)
+            }
+
+            connection.disconnect()
+        }).start()
         onTaskCreated(
                 Task("id3",
                         addTaskRequest.title,
