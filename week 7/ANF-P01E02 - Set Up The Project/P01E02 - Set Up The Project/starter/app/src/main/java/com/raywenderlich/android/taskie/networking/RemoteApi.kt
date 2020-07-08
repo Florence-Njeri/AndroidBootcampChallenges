@@ -177,7 +177,7 @@ class RemoteApi {
                     }
                     //Send the data back to the callback
                     val taskResponse = gson.fromJson(response.toString(), GetTasksResponse::class.java)
-                    onTasksReceived(taskResponse.notes ?: listOf(), null)
+                    onTasksReceived(taskResponse.notes.filter { it.isCompleted }, null)
 
                 }
             } catch (error: Throwable) {
@@ -192,8 +192,48 @@ class RemoteApi {
         onTaskDeleted(null)
     }
 
-    fun completeTask(onTaskCompleted: (Throwable?) -> Unit) {
-        onTaskCompleted(null)
+    fun completeTask(taskId:String,onTaskCompleted: (Throwable?) -> Unit) {
+
+        Thread(Runnable {
+            val connection = URL("$BASE_URL/api/note/complete?id=$taskId").openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Authorization", App.getToken())
+            connection.readTimeout = 10000
+            connection.connectTimeout = 10000
+            connection.doOutput = true
+            connection.doInput = true
+
+            val body = gson.toJson(onTaskCompleted)
+            val bytes = body.toByteArray()
+
+            try {
+                connection.outputStream.use {
+                    it.write(bytes)
+                }
+                //Read the response
+                val reader = InputStreamReader(connection.inputStream)
+                reader.use { input ->
+                    val response = StringBuilder()
+                    val bufferedReader = BufferedReader(input)
+
+                    bufferedReader.useLines { lines ->
+                        lines.forEach {
+                            response.append(it.trim())
+                        }
+
+                    }
+
+                    onTaskCompleted(null)
+
+                }
+            } catch (error: Throwable) {
+                onTaskCompleted(error)
+            }
+
+            connection.disconnect()
+        }).start()
     }
 
     fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Task?, Throwable?) -> Unit) {
