@@ -3,7 +3,7 @@ package com.raywenderlich.android.taskie.networking
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 
-class NetworkStatusChecker(private val connectivityManager: ConnectivityManager) {
+class NetworkStatusChecker(private val connectivityManager: ConnectivityManager?) {
 //    ConnectivityManager is used the check if there s good internet connection
 
     inline fun performIfConnectedToTheInternet(action: ()->Unit){
@@ -13,7 +13,7 @@ class NetworkStatusChecker(private val connectivityManager: ConnectivityManager)
     }
 
     fun hasInternetConnection():Boolean{
-        val network = connectivityManager.activeNetwork ?: return false
+        val network = connectivityManager?.activeNetwork ?: return false
         //If there is a mobile network check if connected to Mobile,WIFI or a VPN
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
 
