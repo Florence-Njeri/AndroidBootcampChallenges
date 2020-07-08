@@ -3,6 +3,10 @@
   xmlns:tools="http://schemas.android.com/tools"
   package="com.raywenderlich.android.taskie">
 
+  <uses-permission android:name="android.permission.INTERNET"/>
+<!--  Check if network connection is a mobile or a WIFI connection-->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
   <application
     android:name=".App"
     android:allowBackup="false"
