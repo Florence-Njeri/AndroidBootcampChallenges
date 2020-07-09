@@ -124,7 +124,6 @@ class AddTaskDialogFragment : DialogFragment() {
             }
         }
 
-
         clearUi()
     }
 

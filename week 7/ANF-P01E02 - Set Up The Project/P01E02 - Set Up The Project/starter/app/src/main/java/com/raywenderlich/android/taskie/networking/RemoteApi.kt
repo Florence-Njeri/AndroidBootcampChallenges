@@ -40,10 +40,7 @@ import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.model.UserProfile
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
-import com.raywenderlich.android.taskie.model.response.CompleteNoteResponse
-import com.raywenderlich.android.taskie.model.response.GetTasksResponse
-import com.raywenderlich.android.taskie.model.response.LoginResponse
-import com.raywenderlich.android.taskie.model.response.UserProfileResponse
+import com.raywenderlich.android.taskie.model.response.*
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -65,43 +62,36 @@ import java.net.URL
 const val BASE_URL = "https://taskie-rw.herokuapp.com"
 
 class RemoteApi(private val remoteApiService: RemoteApiService) {
-    val gson = Gson()
-    fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (String?, Throwable?) -> Unit) {
-        val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(userDataRequest))
 
-        remoteApiService.loginUser(body).enqueue(object : Callback<ResponseBody> {
-            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+    fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (String?, Throwable?) -> Unit) {
+
+        remoteApiService.loginUser(userDataRequest).enqueue(object : Callback<LoginResponse> {
+            override fun onFailure(call: Call<LoginResponse>, error: Throwable) {
                 onUserLoggedIn(null, error)
             }
 
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val jsonBody = response.body()?.string()
-                if (jsonBody == null) {
-                    onUserLoggedIn(null, NullPointerException("No response body!"))
-                    return
-                }
-                val loginResponse = gson.fromJson(jsonBody, LoginResponse::class.java)
+            override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
+
+                val loginResponse = response.body()
                 if (loginResponse == null || loginResponse.token.isNullOrBlank()) {
                     onUserLoggedIn(null, NullPointerException("No response body!"))
                 } else {
                     onUserLoggedIn(loginResponse.token, null)
                 }
-
             }
 
         })
     }
 
     fun registerUser(userDataRequest: UserDataRequest, onUserCreated: (String?, Throwable?) -> Unit) {
-        val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(userDataRequest))
 
-        remoteApiService.registerUser(body).enqueue(object : Callback<ResponseBody> {
-            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+        remoteApiService.registerUser(userDataRequest).enqueue(object : Callback<RegisterResponse> {
+            override fun onFailure(call: Call<RegisterResponse>, error: Throwable) {
                 onUserCreated(null, error)
             }
 
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val message = response.body()?.string()
+            override fun onResponse(call: Call<RegisterResponse>, response: Response<RegisterResponse>) {
+                val message = response.body()?.message
                 if (message == null) {
                     onUserCreated(null, NullPointerException("No response body!"))
                     return
@@ -113,20 +103,17 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     }
 
     fun getTasks(onTasksReceived: (List<Task>, Throwable?) -> Unit) {
-        remoteApiService.getNotes(App.getToken()).enqueue(object : Callback<ResponseBody> {
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+        remoteApiService.getNotes(App.getToken()).enqueue(object : Callback<GetTasksResponse> {
+            override fun onFailure(call: Call<GetTasksResponse>, t: Throwable) {
                 onTasksReceived(emptyList(), null)
             }
 
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val jsonBody = response.body()?.string()
-                if (jsonBody == null) {
-                    onTasksReceived(emptyList(), NullPointerException("No data available!"))
-                    return
-                }
-                val data = gson.fromJson(jsonBody, GetTasksResponse::class.java)
+            override fun onResponse(call: Call<GetTasksResponse>, response: Response<GetTasksResponse>) {
+
+                val data = response.body()
+
                 if (data != null && data.notes.isNotEmpty()) {
-                    onTasksReceived(data.notes.filter { it.isCompleted }, null)
+                    onTasksReceived(data.notes.filter { !it.isCompleted }, null)
                 } else {
                     onTasksReceived(emptyList(), NullPointerException("No data available!"))
                 }
@@ -142,21 +129,16 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
 
     fun completeTask(taskId: String, onTaskCompleted: (Throwable?) -> Unit) {
 
-        remoteApiService.completeTask(App.getToken(), taskId).enqueue(object : Callback<ResponseBody> {
-            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+        remoteApiService.completeTask(App.getToken(), taskId).enqueue(object : Callback<CompleteNoteResponse> {
+            override fun onFailure(call: Call<CompleteNoteResponse>, error: Throwable) {
                 onTaskCompleted(error)
             }
 
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val jsonBody = response.body()?.string()
-                if (jsonBody == null) {
-                    onTaskCompleted(NullPointerException("No response"))
-                    return
-                }
+            override fun onResponse(call: Call<CompleteNoteResponse>, response: Response<CompleteNoteResponse>) {
 
-                val completeNoteResponse = gson.fromJson(jsonBody, CompleteNoteResponse::class.java)
+                val completeNoteResponse = response.body()
 
-                if (completeNoteResponse.message == null) {
+                if (completeNoteResponse?.message == null) {
                     onTaskCompleted(NullPointerException("No response"))
                 } else {
                     onTaskCompleted(null)
@@ -168,25 +150,18 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     }
 
     fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Task?, Throwable?) -> Unit) {
-        val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(addTaskRequest))
-        remoteApiService.addTask(App.getToken(), body).enqueue(object : Callback<ResponseBody> {
-            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+
+        remoteApiService.addTask(App.getToken(), addTaskRequest).enqueue(object : Callback<Task> {
+            override fun onFailure(call: Call<Task>, error: Throwable) {
                 onTaskCreated(null, error)
             }
 
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val jsonBody = response.body()?.string()
+            override fun onResponse(call: Call<Task>, response: Response<Task>) {
 
-                if (jsonBody == null) {
+                val data = response.body()
+                if (data == null) {
                     onTaskCreated(null, NullPointerException("No data available!"))
-                    return
-                }
-
-                val data = gson.fromJson(jsonBody, Task::class.java)
-                if(data == null){
-                    onTaskCreated(null, NullPointerException("No data available!"))
-                }
-                else{
+                } else {
                     onTaskCreated(data, null)
                 }
             }
@@ -201,20 +176,15 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
                 onUserProfileReceived(null, error)
                 return@getTasks
             }
-            remoteApiService.getUserProfile(App.getToken()).enqueue(object : Callback<ResponseBody> {
-                override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+            remoteApiService.getUserProfile(App.getToken()).enqueue(object : Callback<UserProfileResponse> {
+                override fun onFailure(call: Call<UserProfileResponse>, error: Throwable) {
                     onUserProfileReceived(null, error)
                 }
 
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    val jsonBody = response.body()?.string()
+                override fun onResponse(call: Call<UserProfileResponse>, response: Response<UserProfileResponse>) {
 
-                    if (jsonBody == null) {
-                        onUserProfileReceived(null, error)
-                        return
-                    }
-                    val userProfileResponse = gson.fromJson(jsonBody, UserProfileResponse::class.java)
-                    if (userProfileResponse.email == null || userProfileResponse.name == null) {
+                    val userProfileResponse = response.body()
+                    if (userProfileResponse?.email == null || userProfileResponse.name == null) {
                         onUserProfileReceived(null, error)
                     } else {
                         onUserProfileReceived(UserProfile(userProfileResponse.email,
