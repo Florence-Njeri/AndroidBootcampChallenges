@@ -112,20 +112,18 @@ class TaskOptionsDialogFragment : DialogFragment() {
         completeTask.setOnClickListener {
             networkStatusChecker.performIfConnectedToTheInternet {
                 remoteApi.completeTask(taskId) { error ->
-                    activity?.runOnUiThread {
-                        if (error == null) {
-                            taskOptionSelectedListener?.onTaskCompleted(taskId)
-                        }
-                        dismissAllowingStateLoss()
-                    }
 
+                    if (error == null) {
+                        taskOptionSelectedListener?.onTaskCompleted(taskId)
+                    }
+                    dismissAllowingStateLoss()
                 }
             }
 
         }
     }
 
-    fun setTaskOptionSelectedListener(taskOptionSelectedListener: TaskOptionSelectedListener) {
+    fun setTaskOptionSelectedListener(taskOptionSelectedListener: TaskOptionsDialogFragment.TaskOptionSelectedListener) {
         this.taskOptionSelectedListener = taskOptionSelectedListener
     }
 }

@@ -18,4 +18,9 @@ interface RemoteApiService {
 
     @GET("/api/user/profile")
     fun getUserProfile(@Header("Authorization") token:String): Call<ResponseBody>
+
+    @GET("/api/note")
+    fun completeTask(@Header("Authorization") token:String,@Query("id") noteId:String): Call<ResponseBody>
+    @POST("/api/note/complete")
+    fun addTask(@Header("Authorization") token:String,@Body request: RequestBody): Call<ResponseBody>
 }

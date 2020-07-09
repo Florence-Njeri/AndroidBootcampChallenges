@@ -40,6 +40,7 @@ import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.model.UserProfile
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
+import com.raywenderlich.android.taskie.model.response.CompleteNoteResponse
 import com.raywenderlich.android.taskie.model.response.GetTasksResponse
 import com.raywenderlich.android.taskie.model.response.LoginResponse
 import com.raywenderlich.android.taskie.model.response.UserProfileResponse
@@ -141,110 +142,57 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
 
     fun completeTask(taskId: String, onTaskCompleted: (Throwable?) -> Unit) {
 
-        Thread(Runnable {
-            val connection = URL("$BASE_URL/api/note/complete?id=$taskId").openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("Authorization", App.getToken())
-            connection.readTimeout = 10000
-            connection.connectTimeout = 10000
-            connection.doOutput = true
-            connection.doInput = true
-
-            val body = gson.toJson(onTaskCompleted)
-            val bytes = body.toByteArray()
-
-            try {
-                connection.outputStream.use {
-                    it.write(bytes)
-                }
-                //Read the response
-                val reader = InputStreamReader(connection.inputStream)
-                reader.use { input ->
-                    val response = StringBuilder()
-                    val bufferedReader = BufferedReader(input)
-
-                    bufferedReader.useLines { lines ->
-                        lines.forEach {
-                            response.append(it.trim())
-                        }
-
-                    }
-
-                    onTaskCompleted(null)
-
-                }
-            } catch (error: Throwable) {
+        remoteApiService.completeTask(App.getToken(), taskId).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
                 onTaskCompleted(error)
             }
 
-            connection.disconnect()
-        }).start()
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                val jsonBody = response.body()?.string()
+                if (jsonBody == null) {
+                    onTaskCompleted(NullPointerException("No response"))
+                    return
+                }
+
+                val completeNoteResponse = gson.fromJson(jsonBody, CompleteNoteResponse::class.java)
+
+                if (completeNoteResponse.message == null) {
+                    onTaskCompleted(NullPointerException("No response"))
+                } else {
+                    onTaskCompleted(null)
+                }
+            }
+
+
+        })
     }
 
     fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Task?, Throwable?) -> Unit) {
-        Thread(Runnable {
-            val connection = URL("$BASE_URL/api/note").openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json")
-            connection.setRequestProperty("Accept", "application/json")
-            connection.setRequestProperty("Authorization", App.getToken())
-            connection.readTimeout = 10000
-            connection.connectTimeout = 10000
-            connection.doOutput = true
-            connection.doInput = true
-
-//            val requestJson = JSONObject()
-//            requestJson.put("title", addTaskRequest.title)
-//            requestJson.put("content", addTaskRequest.content)
-//            requestJson.put("taskPriority", addTaskRequest.taskPriority)
-            val body = gson.toJson(addTaskRequest)
-//            val body = requestJson.toString()
-            val bytes = body.toByteArray()
-
-            try {
-                connection.outputStream.use {
-                    it.write(bytes)
-                }
-                //Read the response
-                val reader = InputStreamReader(connection.inputStream)
-                reader.use { input ->
-                    val response = StringBuilder()
-                    val bufferedReader = BufferedReader(input)
-
-                    bufferedReader.useLines { lines ->
-                        lines.forEach {
-                            response.append(it.trim())
-                        }
-
-                    }
-                    //Send the data back to the callback
-                    val jsonResponse = JSONObject(response.toString())
-
-                    val id = jsonResponse.getString("id")
-                    val userId = jsonResponse.getString("userId")
-                    val title = jsonResponse.getString("title")
-                    val content = jsonResponse.getString("content")
-                    val isCompleted = jsonResponse.getBoolean("isCompleted")
-                    val taskPriority = jsonResponse.getInt("taskPriority")
-                    val task = Task(id, title, content, isCompleted, taskPriority)
-                    onTaskCreated(task, null)
-                }
-            } catch (error: Throwable) {
+        val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(addTaskRequest))
+        remoteApiService.addTask(App.getToken(), body).enqueue(object : Callback<ResponseBody> {
+            override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
                 onTaskCreated(null, error)
             }
 
-            connection.disconnect()
-        }).start()
-        onTaskCreated(
-                Task("id3",
-                        addTaskRequest.title,
-                        addTaskRequest.content,
-                        false,
-                        addTaskRequest.taskPriority
-                ), null
-        )
+            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                val jsonBody = response.body()?.string()
+
+                if (jsonBody == null) {
+                    onTaskCreated(null, NullPointerException("No data available!"))
+                    return
+                }
+
+                val data = gson.fromJson(jsonBody, Task::class.java)
+                if(data == null){
+                    onTaskCreated(null, NullPointerException("No data available!"))
+                }
+                else{
+                    onTaskCreated(data, null)
+                }
+            }
+
+        })
+
     }
 
     fun getUserProfile(onUserProfileReceived: (UserProfile?, Throwable?) -> Unit) {
@@ -272,7 +220,6 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
                         onUserProfileReceived(UserProfile(userProfileResponse.email,
                                 userProfileResponse.name, tasks.size), null)
                     }
-
 
                 }
 
