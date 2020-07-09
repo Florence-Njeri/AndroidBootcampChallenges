@@ -75,7 +75,6 @@ class RegisterActivity : AppCompatActivity() {
             //Check the users internet connectivity
             networkStatusChecker.performIfConnectedToTheInternet {
                 remoteApi.registerUser(UserDataRequest(email, password, username)) { message, error ->
-
                     //Update the UI on the main thread
                     if (message != null) {
                         toast(message)
@@ -84,7 +83,6 @@ class RegisterActivity : AppCompatActivity() {
                         onRegisterError()
 
                     }
-
                 }
             }
 

@@ -7,8 +7,9 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 interface RemoteApiService {
-    @POST("api/register")
+
+    @POST("/api/register")
     fun registerUser(@Body request: RequestBody): Call<ResponseBody>
-    @POST("api/login")
+    @POST("/api/login")
     fun loginUser(@Body request: RequestBody): Call<ResponseBody>
 }

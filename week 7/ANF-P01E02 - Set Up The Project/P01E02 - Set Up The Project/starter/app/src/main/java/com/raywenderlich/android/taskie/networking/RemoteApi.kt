@@ -41,12 +41,12 @@ import com.raywenderlich.android.taskie.model.UserProfile
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
 import com.raywenderlich.android.taskie.model.response.GetTasksResponse
-import okhttp3.Callback
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Call
+import retrofit2.Callback
 import retrofit2.Response
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -66,7 +66,7 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (String?, Throwable?) -> Unit) {
         val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(userDataRequest))
 
-        remoteApiService.loginUser(body).enqueue(object : retrofit2.Callback<ResponseBody> {
+        remoteApiService.loginUser(body).enqueue(object : Callback<ResponseBody> {
             override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
                 onUserLoggedIn(null, error)
             }
@@ -85,7 +85,8 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
 
     fun registerUser(userDataRequest: UserDataRequest, onUserCreated: (String?, Throwable?) -> Unit) {
         val body = RequestBody.create(MediaType.parse("application/json"), gson.toJson(userDataRequest))
-        remoteApiService.loginUser(body).enqueue(object : retrofit2.Callback<ResponseBody> {
+
+        remoteApiService.registerUser(body).enqueue(object : Callback<ResponseBody> {
             override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
                 onUserCreated(null, error)
             }

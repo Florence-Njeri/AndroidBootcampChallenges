@@ -82,14 +82,11 @@ class LoginActivity : AppCompatActivity() {
     private fun logUserIn(userDataRequest: UserDataRequest) {
         networkStatusChecker.performIfConnectedToTheInternet {
             remoteApi.loginUser(userDataRequest) { token: String?, throwable: Throwable? ->
-
                 if (token != null && token.isNotBlank()) {
                     onLoginSuccess(token)
                 } else if (throwable != null) {
                     showLoginError()
                 }
-
-
             }
         }
 
