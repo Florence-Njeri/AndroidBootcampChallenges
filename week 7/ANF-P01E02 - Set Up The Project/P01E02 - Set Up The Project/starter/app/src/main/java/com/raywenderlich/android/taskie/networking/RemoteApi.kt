@@ -54,7 +54,7 @@ import java.net.URL
 
 const val BASE_URL = "https://taskie-rw.herokuapp.com"
 
-class RemoteApi {
+class RemoteApi(private val remoteApiService: RemoteApiService) {
     val gson = Gson()
     fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (String?, Throwable?) -> Unit) {
         Thread(Runnable {
@@ -158,7 +158,6 @@ class RemoteApi {
             connection.setRequestProperty("Authorization", App.getToken())
             connection.readTimeout = 10000
             connection.connectTimeout = 10000
-            connection.doOutput = true
             connection.doInput = true
 
             /** Get the list of notes from the server */
@@ -192,7 +191,7 @@ class RemoteApi {
         onTaskDeleted(null)
     }
 
-    fun completeTask(taskId:String,onTaskCompleted: (Throwable?) -> Unit) {
+    fun completeTask(taskId: String, onTaskCompleted: (Throwable?) -> Unit) {
 
         Thread(Runnable {
             val connection = URL("$BASE_URL/api/note/complete?id=$taskId").openConnection() as HttpURLConnection
