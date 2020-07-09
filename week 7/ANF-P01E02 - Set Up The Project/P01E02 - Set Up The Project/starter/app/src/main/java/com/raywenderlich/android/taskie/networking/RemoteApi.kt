@@ -41,6 +41,8 @@ import com.raywenderlich.android.taskie.model.UserProfile
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
 import com.raywenderlich.android.taskie.model.response.GetTasksResponse
+import com.raywenderlich.android.taskie.model.response.LoginResponse
+import com.raywenderlich.android.taskie.model.response.UserProfileResponse
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
@@ -72,12 +74,18 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
             }
 
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val message = response.body()?.string()
-                if (message == null) {
+                val jsonBody = response.body()?.string()
+                if (jsonBody == null) {
                     onUserLoggedIn(null, NullPointerException("No response body!"))
                     return
                 }
-                onUserLoggedIn(message, null)
+                val loginResponse = gson.fromJson(jsonBody, LoginResponse::class.java)
+                if (loginResponse == null || loginResponse.token.isNullOrBlank()) {
+                    onUserLoggedIn(null, NullPointerException("No response body!"))
+                } else {
+                    onUserLoggedIn(loginResponse.token, null)
+                }
+
             }
 
         })
@@ -110,16 +118,15 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
             }
 
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                val jsonBody =response.body()?.string()
-                if(jsonBody == null){
+                val jsonBody = response.body()?.string()
+                if (jsonBody == null) {
                     onTasksReceived(emptyList(), NullPointerException("No data available!"))
                     return
                 }
                 val data = gson.fromJson(jsonBody, GetTasksResponse::class.java)
-                if(data !=null && data.notes.isNotEmpty()){
-                    onTasksReceived(data.notes.filter {it.isCompleted}, null)
-                }
-                else{
+                if (data != null && data.notes.isNotEmpty()) {
+                    onTasksReceived(data.notes.filter { it.isCompleted }, null)
+                } else {
                     onTasksReceived(emptyList(), NullPointerException("No data available!"))
                 }
 
@@ -241,6 +248,35 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     }
 
     fun getUserProfile(onUserProfileReceived: (UserProfile?, Throwable?) -> Unit) {
-        onUserProfileReceived(UserProfile("mail@mail.com", "Filip", 10), null)
+        getTasks { tasks, error ->
+            if (tasks != null && error !is NullPointerException) {
+                onUserProfileReceived(null, error)
+                return@getTasks
+            }
+            remoteApiService.getUserProfile(App.getToken()).enqueue(object : Callback<ResponseBody> {
+                override fun onFailure(call: Call<ResponseBody>, error: Throwable) {
+                    onUserProfileReceived(null, error)
+                }
+
+                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    val jsonBody = response.body()?.string()
+
+                    if (jsonBody == null) {
+                        onUserProfileReceived(null, error)
+                        return
+                    }
+                    val userProfileResponse = gson.fromJson(jsonBody, UserProfileResponse::class.java)
+                    if (userProfileResponse.email == null || userProfileResponse.name == null) {
+                        onUserProfileReceived(null, error)
+                    } else {
+                        onUserProfileReceived(UserProfile(userProfileResponse.email,
+                                userProfileResponse.name, tasks.size), null)
+                    }
+
+
+                }
+
+            })
+        }
     }
 }
