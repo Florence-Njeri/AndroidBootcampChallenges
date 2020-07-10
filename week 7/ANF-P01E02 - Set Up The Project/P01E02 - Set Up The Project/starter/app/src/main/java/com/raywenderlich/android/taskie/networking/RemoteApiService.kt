@@ -4,7 +4,6 @@ import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
 import com.raywenderlich.android.taskie.model.response.*
-import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -22,9 +21,9 @@ interface RemoteApiService {
     @GET("/api/user/profile")
     fun getUserProfile(@Header("Authorization") token:String): Call<UserProfileResponse>
 
-    @GET("/api/note")
+    @GET("/api/note/complete")
     fun completeTask(@Header("Authorization") token:String,@Query("id") noteId:String): Call<CompleteNoteResponse>
 
-    @POST("/api/note/complete")
+    @POST("/api/note")
     fun addTask(@Header("Authorization") token:String,@Body request: AddTaskRequest): Call<Task>
 }

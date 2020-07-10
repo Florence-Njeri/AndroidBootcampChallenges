@@ -43,9 +43,9 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.R
+import com.raywenderlich.android.taskie.model.Success
 import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.networking.NetworkStatusChecker
-import com.raywenderlich.android.taskie.networking.RemoteApi
 import com.raywenderlich.android.taskie.ui.notes.dialog.AddTaskDialogFragment
 import com.raywenderlich.android.taskie.ui.notes.dialog.TaskOptionsDialogFragment
 import com.raywenderlich.android.taskie.utils.gone
@@ -105,10 +105,10 @@ class NotesFragment : Fragment(), AddTaskDialogFragment.TaskAddedListener,
     private fun getAllTasks() {
         progress.visible()
         networkStatusChecker.performIfConnectedToTheInternet {
-            remoteApi.getTasks { tasks, error ->
-                if (tasks.isNotEmpty()) {
-                    onTaskListReceived(tasks)
-                } else if (error != null) {
+            remoteApi.getTasks { result ->
+                if (result is Success) {
+                    onTaskListReceived(result.data)
+                } else {
                     onGetTasksFailed()
                 }
             }

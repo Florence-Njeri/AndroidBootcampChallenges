@@ -40,9 +40,9 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.R
+import com.raywenderlich.android.taskie.model.Success
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
 import com.raywenderlich.android.taskie.networking.NetworkStatusChecker
-import com.raywenderlich.android.taskie.networking.RemoteApi
 import com.raywenderlich.android.taskie.ui.main.MainActivity
 import com.raywenderlich.android.taskie.ui.register.RegisterActivity
 import com.raywenderlich.android.taskie.utils.gone
@@ -81,10 +81,10 @@ class LoginActivity : AppCompatActivity() {
 
     private fun logUserIn(userDataRequest: UserDataRequest) {
         networkStatusChecker.performIfConnectedToTheInternet {
-            remoteApi.loginUser(userDataRequest) { token: String?, throwable: Throwable? ->
-                if (token != null && token.isNotBlank()) {
-                    onLoginSuccess(token)
-                } else if (throwable != null) {
+            remoteApi.loginUser(userDataRequest) { result ->
+                if (result is Success) {
+                    onLoginSuccess(result.data)
+                } else {
                     showLoginError()
                 }
             }

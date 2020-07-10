@@ -34,26 +34,14 @@
 
 package com.raywenderlich.android.taskie.networking
 
-import com.google.gson.Gson
 import com.raywenderlich.android.taskie.App
-import com.raywenderlich.android.taskie.model.Task
-import com.raywenderlich.android.taskie.model.UserProfile
+import com.raywenderlich.android.taskie.model.*
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
 import com.raywenderlich.android.taskie.model.response.*
-import okhttp3.MediaType
-import okhttp3.RequestBody
-import okhttp3.ResponseBody
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.lang.NullPointerException
-import java.lang.StringBuilder
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * Holds decoupled logic for all the API calls.
@@ -63,49 +51,49 @@ const val BASE_URL = "https://taskie-rw.herokuapp.com"
 
 class RemoteApi(private val remoteApiService: RemoteApiService) {
 
-    fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (String?, Throwable?) -> Unit) {
+    fun loginUser(userDataRequest: UserDataRequest, onUserLoggedIn: (Result<String>) -> Unit) {
 
         remoteApiService.loginUser(userDataRequest).enqueue(object : Callback<LoginResponse> {
             override fun onFailure(call: Call<LoginResponse>, error: Throwable) {
-                onUserLoggedIn(null, error)
+                onUserLoggedIn(Failure(error))
             }
 
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
 
                 val loginResponse = response.body()
                 if (loginResponse == null || loginResponse.token.isNullOrBlank()) {
-                    onUserLoggedIn(null, NullPointerException("No response body!"))
+                    onUserLoggedIn(Failure(NullPointerException("No response body!")))
                 } else {
-                    onUserLoggedIn(loginResponse.token, null)
+                    onUserLoggedIn(Success(loginResponse.token))
                 }
             }
 
         })
     }
 
-    fun registerUser(userDataRequest: UserDataRequest, onUserCreated: (String?, Throwable?) -> Unit) {
+    fun registerUser(userDataRequest: UserDataRequest, onUserCreated: (Result<String>) -> Unit) {
 
         remoteApiService.registerUser(userDataRequest).enqueue(object : Callback<RegisterResponse> {
             override fun onFailure(call: Call<RegisterResponse>, error: Throwable) {
-                onUserCreated(null, error)
+                onUserCreated(Failure(error))
             }
 
             override fun onResponse(call: Call<RegisterResponse>, response: Response<RegisterResponse>) {
                 val message = response.body()?.message
                 if (message == null) {
-                    onUserCreated(null, NullPointerException("No response body!"))
+                    onUserCreated(Failure(NullPointerException("No response body!")))
                     return
                 }
-                onUserCreated(message, null)
+                onUserCreated(Success(message))
             }
 
         })
     }
 
-    fun getTasks(onTasksReceived: (List<Task>, Throwable?) -> Unit) {
+    fun getTasks(onTasksReceived: (Result<List<Task>>) -> Unit) {
         remoteApiService.getNotes(App.getToken()).enqueue(object : Callback<GetTasksResponse> {
             override fun onFailure(call: Call<GetTasksResponse>, t: Throwable) {
-                onTasksReceived(emptyList(), null)
+                onTasksReceived(Failure(null))
             }
 
             override fun onResponse(call: Call<GetTasksResponse>, response: Response<GetTasksResponse>) {
@@ -113,9 +101,9 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
                 val data = response.body()
 
                 if (data != null && data.notes.isNotEmpty()) {
-                    onTasksReceived(data.notes.filter { !it.isCompleted }, null)
+                    onTasksReceived(Success(data.notes.filter { !it.isCompleted }))
                 } else {
-                    onTasksReceived(emptyList(), NullPointerException("No data available!"))
+                    onTasksReceived(Failure(NullPointerException("No data available!")))
                 }
 
             }
@@ -149,45 +137,46 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
         })
     }
 
-    fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Task?, Throwable?) -> Unit) {
+    fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Result<Task>) -> Unit) {
 
         remoteApiService.addTask(App.getToken(), addTaskRequest).enqueue(object : Callback<Task> {
             override fun onFailure(call: Call<Task>, error: Throwable) {
-                onTaskCreated(null, error)
+                onTaskCreated(Failure(error))
             }
 
             override fun onResponse(call: Call<Task>, response: Response<Task>) {
 
                 val data = response.body()
                 if (data == null) {
-                    onTaskCreated(null, NullPointerException("No data available!"))
+                    onTaskCreated(Failure(NullPointerException("No data available!")))
                 } else {
-                    onTaskCreated(data, null)
+                    onTaskCreated(Success(data))
                 }
             }
 
         })
 
     }
-    fun getUserProfile(onUserProfileReceived: (UserProfile?, Throwable?) -> Unit) {
-        getTasks { tasks, error ->
-            if (tasks != null && error !is NullPointerException) {
-                onUserProfileReceived(null, error)
+
+    fun getUserProfile(onUserProfileReceived: (Result<UserProfile>) -> Unit) {
+        getTasks { tasks ->
+            if (tasks != null) {
+                onUserProfileReceived(Failure(NullPointerException("No data available!")))
                 return@getTasks
             }
             remoteApiService.getUserProfile(App.getToken()).enqueue(object : Callback<UserProfileResponse> {
                 override fun onFailure(call: Call<UserProfileResponse>, error: Throwable) {
-                    onUserProfileReceived(null, error)
+                    onUserProfileReceived(Failure(error))
                 }
 
                 override fun onResponse(call: Call<UserProfileResponse>, response: Response<UserProfileResponse>) {
 
                     val userProfileResponse = response.body()
                     if (userProfileResponse?.email == null || userProfileResponse.name == null) {
-                        onUserProfileReceived(null, error)
+                        onUserProfileReceived(Failure(NullPointerException("No data available!")))
                     } else {
-                        onUserProfileReceived(UserProfile(userProfileResponse.email,
-                                userProfileResponse.name, tasks.size), null)
+                        onUserProfileReceived(Success(UserProfile(userProfileResponse.email,
+                                userProfileResponse.name, tasks)))
                     }
 
                 }
