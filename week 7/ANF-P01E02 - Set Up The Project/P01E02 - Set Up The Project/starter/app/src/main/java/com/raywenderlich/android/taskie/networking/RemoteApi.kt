@@ -169,7 +169,6 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
         })
 
     }
-
     fun getUserProfile(onUserProfileReceived: (UserProfile?, Throwable?) -> Unit) {
         getTasks { tasks, error ->
             if (tasks != null && error !is NullPointerException) {
