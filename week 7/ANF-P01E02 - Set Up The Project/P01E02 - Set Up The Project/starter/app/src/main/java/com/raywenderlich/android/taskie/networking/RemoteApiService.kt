@@ -16,14 +16,17 @@ interface RemoteApiService {
     fun loginUser(@Body request: UserDataRequest): Call<LoginResponse>
 
     @GET("/api/note")
-    fun getNotes(@Header("Authorization") token:String): Call<GetTasksResponse>
+    fun getNotes(): Call<GetTasksResponse>
 
     @GET("/api/user/profile")
-    fun getUserProfile(@Header("Authorization") token:String): Call<UserProfileResponse>
+    fun getUserProfile(): Call<UserProfileResponse>
 
     @GET("/api/note/complete")
-    fun completeTask(@Header("Authorization") token:String,@Query("id") noteId:String): Call<CompleteNoteResponse>
+    fun completeTask(@Query("id") noteId: String): Call<CompleteNoteResponse>
 
     @POST("/api/note")
-    fun addTask(@Header("Authorization") token:String,@Body request: AddTaskRequest): Call<Task>
+    fun addTask(@Body request: AddTaskRequest): Call<Task>
+
+    @DELETE("/api/note")
+    fun deleteNote(@Query("id") noteId: String): Call<DeleteNoteResponse>
 }

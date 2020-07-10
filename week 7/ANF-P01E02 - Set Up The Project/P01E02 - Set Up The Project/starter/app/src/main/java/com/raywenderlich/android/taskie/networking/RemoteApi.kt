@@ -34,7 +34,6 @@
 
 package com.raywenderlich.android.taskie.networking
 
-import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.model.*
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.model.request.UserDataRequest
@@ -91,9 +90,9 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     }
 
     fun getTasks(onTasksReceived: (Result<List<Task>>) -> Unit) {
-        remoteApiService.getNotes(App.getToken()).enqueue(object : Callback<GetTasksResponse> {
-            override fun onFailure(call: Call<GetTasksResponse>, t: Throwable) {
-                onTasksReceived(Failure(null))
+        remoteApiService.getNotes().enqueue(object : Callback<GetTasksResponse> {
+            override fun onFailure(call: Call<GetTasksResponse>, error: Throwable) {
+                onTasksReceived(Failure(error))
             }
 
             override fun onResponse(call: Call<GetTasksResponse>, response: Response<GetTasksResponse>) {
@@ -111,13 +110,26 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
         })
     }
 
-    fun deleteTask(onTaskDeleted: (Throwable?) -> Unit) {
-        onTaskDeleted(null)
+    fun deleteTask(noteId: String, onTaskDeleted: (Result<String>) -> Unit) {
+        remoteApiService.deleteNote(noteId).enqueue(object : Callback<DeleteNoteResponse> {
+            override fun onFailure(call: Call<DeleteNoteResponse>, error: Throwable) {
+                onTaskDeleted(Failure(error))
+            }
+
+            override fun onResponse(call: Call<DeleteNoteResponse>, response: Response<DeleteNoteResponse>) {
+                val deletedTaskResponse = response.body()
+                if (deletedTaskResponse?.message == null) {
+                    onTaskDeleted(Failure(NullPointerException("No response")))
+                } else {
+                    onTaskDeleted(Success(deletedTaskResponse.message))
+                }
+            }
+        })
     }
 
     fun completeTask(taskId: String, onTaskCompleted: (Throwable?) -> Unit) {
 
-        remoteApiService.completeTask(App.getToken(), taskId).enqueue(object : Callback<CompleteNoteResponse> {
+        remoteApiService.completeTask(taskId).enqueue(object : Callback<CompleteNoteResponse> {
             override fun onFailure(call: Call<CompleteNoteResponse>, error: Throwable) {
                 onTaskCompleted(error)
             }
@@ -139,7 +151,7 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
 
     fun addTask(addTaskRequest: AddTaskRequest, onTaskCreated: (Result<Task>) -> Unit) {
 
-        remoteApiService.addTask(App.getToken(), addTaskRequest).enqueue(object : Callback<Task> {
+        remoteApiService.addTask(addTaskRequest).enqueue(object : Callback<Task> {
             override fun onFailure(call: Call<Task>, error: Throwable) {
                 onTaskCreated(Failure(error))
             }
@@ -159,12 +171,15 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
     }
 
     fun getUserProfile(onUserProfileReceived: (Result<UserProfile>) -> Unit) {
-        getTasks { tasks ->
-            if (tasks != null) {
-                onUserProfileReceived(Failure(NullPointerException("No data available!")))
+        getTasks { result ->
+            if (result is Failure && result.error !is NullPointerException) {
+                onUserProfileReceived(Failure(result.error))
                 return@getTasks
             }
-            remoteApiService.getUserProfile(App.getToken()).enqueue(object : Callback<UserProfileResponse> {
+            var tasks = result as Success
+
+
+            remoteApiService.getUserProfile().enqueue(object : Callback<UserProfileResponse> {
                 override fun onFailure(call: Call<UserProfileResponse>, error: Throwable) {
                     onUserProfileReceived(Failure(error))
                 }
@@ -176,7 +191,7 @@ class RemoteApi(private val remoteApiService: RemoteApiService) {
                         onUserProfileReceived(Failure(NullPointerException("No data available!")))
                     } else {
                         onUserProfileReceived(Success(UserProfile(userProfileResponse.email,
-                                userProfileResponse.name, tasks)))
+                                userProfileResponse.name, tasks.data.size)))
                     }
 
                 }
