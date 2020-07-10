@@ -46,12 +46,14 @@ import androidx.fragment.app.DialogFragment
 import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.R
 import com.raywenderlich.android.taskie.model.PriorityColor
-import com.raywenderlich.android.taskie.model.Success
 import com.raywenderlich.android.taskie.model.Task
 import com.raywenderlich.android.taskie.model.request.AddTaskRequest
 import com.raywenderlich.android.taskie.networking.NetworkStatusChecker
 import com.raywenderlich.android.taskie.utils.toast
 import kotlinx.android.synthetic.main.fragment_dialog_new_task.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
  * Dialog fragment to create a new task.
@@ -114,14 +116,8 @@ class AddTaskDialogFragment : DialogFragment() {
         val priority = prioritySelector.selectedItemPosition + 1
 
         networkStatusChecker.performIfConnectedToTheInternet {
-            remoteApi.addTask(AddTaskRequest(title, content, priority)) { result ->
-                if (result is Success) {
-                    onTaskAdded(result.data)
-                } else {
-                    onTaskAddFailed()
-                }
+            GlobalScope.launch(Dispatchers.Main) { remoteApi.addTask(AddTaskRequest(title, content, priority)) }
 
-            }
         }
 
         clearUi()
