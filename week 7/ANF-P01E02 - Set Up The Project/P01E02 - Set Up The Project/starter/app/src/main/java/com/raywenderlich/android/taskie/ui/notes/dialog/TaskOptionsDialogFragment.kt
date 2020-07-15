@@ -41,10 +41,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.fragment.app.DialogFragment
+import com.raywenderlich.android.taskie.App
 import com.raywenderlich.android.taskie.R
+import com.raywenderlich.android.taskie.model.Success
 import com.raywenderlich.android.taskie.networking.NetworkStatusChecker
-import com.raywenderlich.android.taskie.networking.RemoteApi
 import kotlinx.android.synthetic.main.fragment_dialog_task_options.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
  * Displays the options to delete or complete a task.
@@ -53,7 +57,7 @@ class TaskOptionsDialogFragment : DialogFragment() {
 
     private var taskOptionSelectedListener: TaskOptionSelectedListener? = null
 
-    private val remoteApi = RemoteApi()
+    private val remoteApi = App.remoteApi
 
     private val networkStatusChecker by lazy { NetworkStatusChecker(activity?.getSystemService(ConnectivityManager::class.java)) }
 
@@ -100,9 +104,12 @@ class TaskOptionsDialogFragment : DialogFragment() {
         if (taskId.isEmpty()) dismissAllowingStateLoss()
 
         deleteTask.setOnClickListener {
-            remoteApi.deleteTask { error ->
-                if (error == null) {
-                    taskOptionSelectedListener?.onTaskDeleted(taskId)
+            networkStatusChecker.performIfConnectedToTheInternet {
+                GlobalScope.launch(Dispatchers.Main) {
+                    val result = remoteApi.deleteTask(taskId)
+                    if (result is Success) {
+                        taskOptionSelectedListener?.onTaskDeleted(taskId)
+                    }
                 }
                 dismissAllowingStateLoss()
             }
@@ -110,21 +117,14 @@ class TaskOptionsDialogFragment : DialogFragment() {
 
         completeTask.setOnClickListener {
             networkStatusChecker.performIfConnectedToTheInternet {
-                remoteApi.completeTask(taskId) { error ->
-                    activity?.runOnUiThread {
-                        if (error == null) {
-                            taskOptionSelectedListener?.onTaskCompleted(taskId)
-                        }
-                        dismissAllowingStateLoss()
-                    }
+                GlobalScope.launch(Dispatchers.Main) { remoteApi.completeTask(taskId) }
 
-                }
             }
 
         }
     }
 
-    fun setTaskOptionSelectedListener(taskOptionSelectedListener: TaskOptionSelectedListener) {
+    fun setTaskOptionSelectedListener(taskOptionSelectedListener: TaskOptionsDialogFragment.TaskOptionSelectedListener) {
         this.taskOptionSelectedListener = taskOptionSelectedListener
     }
 }
