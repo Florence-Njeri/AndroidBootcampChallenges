@@ -35,20 +35,27 @@
 package com.raywenderlich.android.kotlincoroutinesfundamentals
 
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.net.HttpURLConnection
-import java.net.URL
+import kotlinx.coroutines.withContext
 
 /**
  * Main Screen
  */
 class MainActivity : AppCompatActivity() {
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         // Switch to AppTheme for displaying the activity
         setTheme(R.style.AppTheme)
@@ -56,41 +63,57 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Your code
-        GlobalScope.launch(context = Dispatchers.IO) {
-            val owlUrl = URL("https://wallpaperplay.com/walls/full/1/c/7/38027.jpg")
-            val connection = owlUrl.openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
+        downloadImage()
+    }
 
-            //Transfer the owl data from the link to my app (open te stream and decode it to a Bitmap)
-            val inputStream = connection.inputStream
-            val bitmap = BitmapFactory.decodeStream(inputStream)
-            /** Method 1 */
-            launch(Dispatchers.Main) {
-                image.setImageBitmap(bitmap)
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun downloadImage() {
+        //Schedule the work to run only when the conditions below have been met
+        val constraints = Constraints.Builder()
+                .setRequiresBatteryNotLow(true)
+                .setRequiresStorageNotLow(true)
+                .setRequiredNetworkType(NetworkType.NOT_ROAMING)
+                .build()
+
+        //Clear the files
+        val clearFilesWorker = OneTimeWorkRequestBuilder<FileClearWorker>()
+                .build()
+        //Download the image only once
+        val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
+                .setConstraints(constraints)
+                .build()
+        //Apply filter to the image
+        val sepiaFilterWorker = OneTimeWorkRequestBuilder<SepiaFilterWorker>()
+                .setConstraints(constraints)
+                .build()
+
+        //Queue the Worker using the WorkManager
+        val workManager = WorkManager.getInstance(this)
+        workManager.beginWith(clearFilesWorker)
+                .then(downloadRequest)
+                .then(sepiaFilterWorker)
+                .enqueue()
+
+        workManager.getWorkInfoByIdLiveData(sepiaFilterWorker.id).observe(this, Observer { info ->
+            if (info.state.isFinished) {
+                val imagePath = info.outputData.getString("image_path")
+                if (!imagePath.isNullOrEmpty()) {
+                    diplayImage(imagePath)
+                }
             }
+        })
 
+    }
+
+    private fun diplayImage(absolutePath: String) {
+        GlobalScope.launch(Dispatchers.Main) {
+            val bitmap = loadImagefromFile(absolutePath)
+
+            image.setImageBitmap(bitmap)
         }
-//        val mainLooper = mainLooper
-//        Thread(Runnable {
-//            val owlUrl = URL("https://wallpaperplay.com/walls/full/1/c/7/38027.jpg")
-//            val connection = owlUrl.openConnection() as HttpURLConnection
-//            connection.doInput = true
-//            connection.connect()
-//
-//            //Transfer the owl data from the link to my app (open te stream and decode it to a Bitmap)
-//            val inputStream = connection.inputStream
-//            val bitmap = BitmapFactory.decodeStream(inputStream)
-//            /** Method 1 */
-//            Handler(mainLooper).post { image.setImageBitmap(bitmap) }
-//
-//            /** Method 2 */
-////            runOnUiThread {
-////                image.setImageBitmap(bitmap)
-////            }
-//
-//        }).start()
+    }
 
+    private suspend fun loadImagefromFile(absolutePath: String) = withContext(Dispatchers.IO) {
+        BitmapFactory.decodeFile(absolutePath)
     }
 }
