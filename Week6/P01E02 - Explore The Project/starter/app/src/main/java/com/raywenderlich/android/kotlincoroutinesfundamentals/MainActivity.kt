@@ -49,7 +49,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 /**
  * Main Screen
@@ -76,6 +75,9 @@ class MainActivity : AppCompatActivity() {
                 .setRequiredNetworkType(NetworkType.NOT_ROAMING)
                 .build()
 
+        //Clear the files
+        val clearFilesWorker = OneTimeWorkRequestBuilder<FileClearWorker>()
+                .build()
         //Download the image only once
         val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
                 .setConstraints(constraints)
@@ -83,14 +85,17 @@ class MainActivity : AppCompatActivity() {
 
         //Queue the Worker using the WorkManager
         val workManager = WorkManager.getInstance(this)
-        workManager.enqueue(downloadRequest)
+        workManager.beginWith(clearFilesWorker)
+                .then(downloadRequest)
+                .enqueue()
 
         workManager.getWorkInfoByIdLiveData(downloadRequest.id).observe(this, Observer { info ->
             if (info.state.isFinished) {
-                val imageFile = File(externalMediaDirs.first(), "owl_image.jpg")
-                diplayImage(imageFile.absolutePath)
+                val imagePath = info.outputData.getString("image_path")
+                if (!imagePath.isNullOrEmpty()) {
+                    diplayImage(imagePath)
+                }
             }
-
         })
 
     }
