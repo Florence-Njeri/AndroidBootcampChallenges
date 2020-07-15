@@ -82,14 +82,19 @@ class MainActivity : AppCompatActivity() {
         val downloadRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
                 .setConstraints(constraints)
                 .build()
+        //Apply filter to the image
+        val sepiaFilterWorker = OneTimeWorkRequestBuilder<SepiaFilterWorker>()
+                .setConstraints(constraints)
+                .build()
 
         //Queue the Worker using the WorkManager
         val workManager = WorkManager.getInstance(this)
         workManager.beginWith(clearFilesWorker)
                 .then(downloadRequest)
+                .then(sepiaFilterWorker)
                 .enqueue()
 
-        workManager.getWorkInfoByIdLiveData(downloadRequest.id).observe(this, Observer { info ->
+        workManager.getWorkInfoByIdLiveData(sepiaFilterWorker.id).observe(this, Observer { info ->
             if (info.state.isFinished) {
                 val imagePath = info.outputData.getString("image_path")
                 if (!imagePath.isNullOrEmpty()) {
