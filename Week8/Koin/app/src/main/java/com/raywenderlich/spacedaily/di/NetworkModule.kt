@@ -12,7 +12,7 @@ import org.koin.dsl.module
 import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
-val networkModue = module {
+val networkModule = module {
     single(named("BASE_URL")) { "https://api.nasa.gov/planetary/" }
     //Create the logging interceptor
     single {
