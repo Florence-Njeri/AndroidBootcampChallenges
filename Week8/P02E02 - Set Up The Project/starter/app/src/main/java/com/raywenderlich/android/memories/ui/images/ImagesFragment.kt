@@ -42,20 +42,22 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.work.Constraints
-import androidx.work.NetworkType
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import androidx.work.*
 import com.raywenderlich.android.memories.App
 import com.raywenderlich.android.memories.R
 import com.raywenderlich.android.memories.model.Image
+import com.raywenderlich.android.memories.model.result.Success
 import com.raywenderlich.android.memories.networking.NetworkStatusChecker
 import com.raywenderlich.android.memories.ui.images.dialog.ImageOptionsDialogFragment
 import com.raywenderlich.android.memories.utils.gone
 import com.raywenderlich.android.memories.utils.toast
 import com.raywenderlich.android.memories.utils.visible
 import com.raywenderlich.android.memories.worker.DownloadImageWorker
+import com.raywenderlich.android.memories.worker.LocalImageCheckWorker
 import kotlinx.android.synthetic.main.fragment_images.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 
 /**
  * Fetches and displays notes from the API.
@@ -106,6 +108,10 @@ class ImagesFragment : Fragment(), ImageOptionsDialogFragment.ImageOptionsListen
                 .setRequiredNetworkType(NetworkType.NOT_ROAMING)
                 .build()
 
+        //Check if the image has already been downloaded
+        val imageCheckerWorker = OneTimeWorkRequestBuilder<LocalImageCheckWorker>()
+                .setInputData(workDataOf("image_path" to imageUrl))
+                .build()
         //Download the image only once
         val downloadImageWorker = OneTimeWorkRequestBuilder<DownloadImageWorker>()
                 .setConstraints(constraints)
@@ -113,7 +119,9 @@ class ImagesFragment : Fragment(), ImageOptionsDialogFragment.ImageOptionsListen
 
         //Queue the Worker using the WorkManager
         val workManager = WorkManager.getInstance(requireContext())
-        workManager.enqueue(downloadImageWorker)
+        workManager.beginWith(imageCheckerWorker)
+                .then(downloadImageWorker)
+                .enqueue()
 
         workManager.getWorkInfoByIdLiveData(downloadImageWorker.id).observe(this, Observer { info ->
             if (info.state.isFinished) {
@@ -129,19 +137,17 @@ class ImagesFragment : Fragment(), ImageOptionsDialogFragment.ImageOptionsListen
     private fun getAllImages() {
         progress.visible()
 
-        onImageUrlsReceived(listOf(Image("https://www.wallpaperup.com/uploads/wallpapers/2013/03/21/55924/3b61c716155c6fa88f321da6d4655767.jpg")))
-        return
-//    networkStatusChecker.performIfConnectedToInternet {
-//      GlobalScope.launch(Dispatchers.Main) {
-//        val result = remoteApi.getImages()
-//
-//        if (result is Success) {
-//          onImageUrlsReceived(result.data)
-//        } else {
-//          onGetImagesFailed()
-//        }
-//      }
-//    }
+        networkStatusChecker.performIfConnectedToInternet {
+            GlobalScope.launch(Dispatchers.Main) {
+                val result = remoteApi.getImages()
+
+                if (result is Success) {
+                    onImageUrlsReceived(result.data)
+                } else {
+                    onGetImagesFailed()
+                }
+            }
+        }
     }
 
     private fun onImageUrlsReceived(data: List<Image>) {
