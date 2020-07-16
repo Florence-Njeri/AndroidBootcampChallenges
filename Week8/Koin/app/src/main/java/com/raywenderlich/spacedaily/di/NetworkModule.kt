@@ -1,10 +1,15 @@
 package com.raywenderlich.spacedaily.di
 
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.raywenderlich.spacedaily.BuildConfig
+import com.raywenderlich.spacedaily.network.NASAAPIInterface
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import retrofit2.Retrofit
 import java.util.concurrent.TimeUnit
 
 val networkModue = module {
@@ -26,5 +31,19 @@ val networkModue = module {
             client.addInterceptor(get<HttpLoggingInterceptor>())
         }
         client.build()
+    }
+    //Create Retrofit
+    single {
+        val contentType = "application/json".toMediaType()
+        Retrofit.Builder()
+            .baseUrl(get<String>(named("BASE_URL")))
+            .addConverterFactory(Json.asConverterFactory(contentType))
+            .client(get())
+            .build()
+    }
+
+    //Now create Api Service endpoint
+    single {
+        get<Retrofit>().create(NASAAPIInterface::class.java)
     }
 }
