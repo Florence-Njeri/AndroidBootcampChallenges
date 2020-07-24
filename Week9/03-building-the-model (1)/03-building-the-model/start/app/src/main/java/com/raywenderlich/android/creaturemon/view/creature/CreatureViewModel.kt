@@ -9,8 +9,11 @@ import com.raywenderlich.android.creaturemon.model.room.RoomRepository
 class CreatureViewModel(private val creatureGenerator: CreatureGenerator = CreatureGenerator(), private val repository: CreatureRepository = RoomRepository()) : ViewModel() {
 
     private val creatureLiveData = MutableLiveData<Creature>()
+    private val saveLiveData = MutableLiveData<Boolean>()
 
     fun getCreatureLiveData(): LiveData<Creature> = creatureLiveData
+    fun getSaveLiveData(): LiveData<Boolean> = saveLiveData
+
     var name = ""
     var intelligence = 0
     var strength = 0
@@ -40,12 +43,12 @@ class CreatureViewModel(private val creatureGenerator: CreatureGenerator = Creat
         updateCreature()
     }
 
-    fun saveCreatureToRepo(): Boolean {
-        return if (canSaveCreature()) {
+    fun saveCreatureToRepo(){
+        if (canSaveCreature()) {
             repository.saveCreature(creature)
-            true
+            saveLiveData.postValue(true)
         } else {
-            false
+            saveLiveData.postValue(true)
         }
     }
 
