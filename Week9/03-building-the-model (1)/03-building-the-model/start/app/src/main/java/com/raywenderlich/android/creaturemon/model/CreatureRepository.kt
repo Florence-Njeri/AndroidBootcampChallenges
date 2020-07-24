@@ -30,10 +30,10 @@
 
 package com.raywenderlich.android.creaturemon.model
 
-import androidx.lifecycle.LiveData
+import android.arch.lifecycle.LiveData
 
 interface CreatureRepository{
     fun saveCreature(creature: Creature)
-    fun getAllCreatures():LiveData<List<Creature>>
+    fun getAllCreatures(): LiveData<List<Creature>>
     fun deleteAllCreatures()
 }

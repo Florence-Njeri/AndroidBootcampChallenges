@@ -30,6 +30,7 @@
 
 package com.raywenderlich.android.creaturemon.model.room
 
+import android.arch.lifecycle.LiveData
 import android.os.AsyncTask
 import com.raywenderlich.android.creaturemon.app.CreaturemonApplication
 import com.raywenderlich.android.creaturemon.model.Creature
@@ -37,7 +38,7 @@ import com.raywenderlich.android.creaturemon.model.CreatureRepository
 
 class RoomRepository : CreatureRepository {
     private val creatureDao: CreatureDao = CreaturemonApplication.database.creatureDao()
-    private var allCreatures: androidx.lifecycle.LiveData<List<Creature>>
+    private var allCreatures: LiveData<List<Creature>>
 
     init {
         allCreatures = creatureDao.getAllCreatures()
@@ -61,7 +62,7 @@ class RoomRepository : CreatureRepository {
         InsertAsyncTask(creatureDao).execute(creature)
     }
 
-    override fun getAllCreatures(): androidx.lifecycle.LiveData<List<Creature>> {
+    override fun getAllCreatures(): LiveData<List<Creature>> {
         return allCreatures
     }
 
