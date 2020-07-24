@@ -36,17 +36,40 @@ import com.raywenderlich.android.creaturemon.model.Creature
 import com.raywenderlich.android.creaturemon.model.CreatureRepository
 
 class RoomRepository : CreatureRepository {
-  private val creatureDao: CreatureDao = CreaturemonApplication.database.creatureDao()
+    private val creatureDao: CreatureDao = CreaturemonApplication.database.creatureDao()
+    private var allCreatures: androidx.lifecycle.LiveData<List<Creature>>
 
-  private class InsertAsyncTask internal constructor(private val dao: CreatureDao) : AsyncTask<Creature, Void, Void>() {
-    override fun doInBackground(vararg params: Creature): Void? {
-      return null
+    init {
+        allCreatures = creatureDao.getAllCreatures()
     }
-  }
 
-  private class DeleteAsyncTask internal constructor(private val dao: CreatureDao) : AsyncTask<Creature, Void, Void>() {
-    override fun doInBackground(vararg params: Creature): Void? {
-      return null
+    private class InsertAsyncTask internal constructor(private val dao: CreatureDao) : AsyncTask<Creature, Void, Void>() {
+        override fun doInBackground(vararg params: Creature): Void? {
+            dao.insert(params[0])
+            return null
+        }
     }
-  }
+
+    private class DeleteAsyncTask internal constructor(private val dao: CreatureDao) : AsyncTask<Creature, Void, Void>() {
+        override fun doInBackground(vararg params: Creature): Void? {
+            dao.clearCreatures(*params)
+            return null
+        }
+    }
+
+    override fun saveCreature(creature: Creature) {
+        InsertAsyncTask(creatureDao).execute(creature)
+    }
+
+    override fun getAllCreatures(): androidx.lifecycle.LiveData<List<Creature>> {
+        return allCreatures
+    }
+
+    override fun deleteAllCreatures() {
+        val creatureArray = allCreatures.value?.toTypedArray()
+        if(creatureArray!=null){
+            DeleteAsyncTask(creatureDao).execute(*creatureArray)
+        }
+
+    }
 }
