@@ -22,13 +22,14 @@ class CreatureViewModelTest {
 
     @Mock
     private lateinit var mockGenerator: CreatureGenerator
+
     @Mock
     private lateinit var creatureRepository: CreatureRepository
 
     @Before
     fun setup() {
         MockitoAnnotations.initMocks(this)
-        creatureViewModel = CreatureViewModel(mockGenerator,creatureRepository)
+        creatureViewModel = CreatureViewModel(mockGenerator, creatureRepository)
     }
 
     @Test
@@ -54,6 +55,18 @@ class CreatureViewModelTest {
         creatureViewModel.strength = 3
         creatureViewModel.drawable = 1
         creatureViewModel.name = ""
+
+        val canSaveCreature = creatureViewModel.canSaveCreature()
+        assertEquals(false, canSaveCreature)
+    }
+
+    @Test
+    fun testCantSaveCreatureWithoutStrength() {
+        creatureViewModel.intelligence = 10
+        creatureViewModel.endurance = 7
+        creatureViewModel.strength = 0
+        creatureViewModel.drawable = 1
+        creatureViewModel.name = "My Test Creature"
 
         val canSaveCreature = creatureViewModel.canSaveCreature()
         assertEquals(false, canSaveCreature)
