@@ -30,4 +30,11 @@
 
 package com.raywenderlich.android.creaturemon.model
 
-class Creature
+import android.graphics.drawable.Drawable
+
+data class Creature(
+        val attributes: CreatureAttributes,
+        val hitpoints:Int = 0,
+        val name:String = "",
+        val drawable:Int =0
+)
