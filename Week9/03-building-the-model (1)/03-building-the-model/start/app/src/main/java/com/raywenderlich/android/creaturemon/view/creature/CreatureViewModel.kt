@@ -3,6 +3,7 @@ package com.raywenderlich.android.creaturemon.view.creature
 import android.arch.lifecycle.LiveData
 import android.arch.lifecycle.MutableLiveData
 import android.arch.lifecycle.ViewModel
+import android.databinding.ObservableField
 import com.raywenderlich.android.creaturemon.model.*
 import com.raywenderlich.android.creaturemon.model.room.RoomRepository
 
@@ -14,7 +15,7 @@ class CreatureViewModel(private val creatureGenerator: CreatureGenerator = Creat
     fun getCreatureLiveData(): LiveData<Creature> = creatureLiveData
     fun getSaveLiveData(): LiveData<Boolean> = saveLiveData
 
-    var name = ""
+    var name = ObservableField<String>("")
     var intelligence = 0
     var strength = 0
     var endurance = 0
@@ -24,7 +25,7 @@ class CreatureViewModel(private val creatureGenerator: CreatureGenerator = Creat
 
     fun updateCreature() {
         val attributes = CreatureAttributes(intelligence, strength, endurance)
-        creature = creatureGenerator.generateCreature(attributes, name, drawable)
+        creature = creatureGenerator.generateCreature(attributes, name.get() ?: "", drawable)
         creatureLiveData.postValue(creature)
     }
 
@@ -43,7 +44,7 @@ class CreatureViewModel(private val creatureGenerator: CreatureGenerator = Creat
         updateCreature()
     }
 
-    fun saveCreatureToRepo(){
+    fun saveCreatureToRepo() {
         if (canSaveCreature()) {
             repository.saveCreature(creature)
             saveLiveData.postValue(true)
@@ -53,6 +54,10 @@ class CreatureViewModel(private val creatureGenerator: CreatureGenerator = Creat
     }
 
     fun canSaveCreature(): Boolean {
-        return intelligence != 0 && strength != 0 && endurance != 0 && name.isNotEmpty() && drawable != 0
+        val name = this.name.get()
+        name?.let {
+            return intelligence != 0 && strength != 0 && endurance != 0 && name.isNotEmpty() && drawable != 0
+        }
+        return false
     }
 }

@@ -66,7 +66,6 @@ class CreatureActivity : AppCompatActivity(), AvatarAdapter.AvatarListener {
         configureUI()
         configureSpinnerAdapters()
         configureSpinnerListeners()
-        configureEditText()
         configureClickListeners()
         configureLiveDataObservers()
     }
@@ -108,16 +107,6 @@ class CreatureActivity : AppCompatActivity(), AvatarAdapter.AvatarListener {
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-    }
-
-    private fun configureEditText() {
-        nameEditText.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable?) {}
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                viewModel.name = s.toString()
-            }
-        })
     }
 
     private fun configureClickListeners() {
