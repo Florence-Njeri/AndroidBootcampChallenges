@@ -37,6 +37,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.view.View.INVISIBLE
+import android.view.View.VISIBLE
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import com.raywenderlich.android.foodmart.R
 import com.raywenderlich.android.foodmart.app.toast
 import com.raywenderlich.android.foodmart.model.events.CartEvent
@@ -48,66 +52,85 @@ import org.greenrobot.eventbus.ThreadMode
 
 class FoodActivity : AppCompatActivity(), FoodContract.View {
 
-  override lateinit var presenter: FoodContract.Presenter
+    override lateinit var presenter: FoodContract.Presenter
 
-  companion object {
-    private const val EXTRA_FOOD_ID = "place_id"
+    companion object {
+        private const val EXTRA_FOOD_ID = "place_id"
 
-    fun newIntent(context: Context, foodId: Int): Intent {
-      val intent = Intent(context, FoodActivity::class.java)
-      intent.putExtra(EXTRA_FOOD_ID, foodId)
-      return intent
-    }
-  }
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_food)
-
-    setSupportActionBar(toolbar)
-    supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-    presenter = Injection.provideFoodPresenter(this)
-
-    val food = presenter.getFood(intent.extras.getInt(EXTRA_FOOD_ID))
-
-    food?.let {
-      foodImage.setImageResource(resources.getIdentifier(food.largeImage, null, packageName))
-      collapsingToolbar.title = food.name
-      collapsingToolbar.setExpandedTitleColor(ContextCompat.getColor(this, android.R.color.transparent))
-      foodName.text = food.name
-      foodDescription.text = food.description
-      fab.setImageResource(if (food.isInCart) R.drawable.ic_done else R.drawable.ic_add)
-      moreInfo.setOnClickListener {
-        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(food.link))
-        startActivity(browserIntent)
-      }
-      fab.setOnClickListener {
-        if (food.isInCart) {
-          presenter.removeItem(food)
-        } else {
-          presenter.addItem(food)
+        fun newIntent(context: Context, foodId: Int): Intent {
+            val intent = Intent(context, FoodActivity::class.java)
+            intent.putExtra(EXTRA_FOOD_ID, foodId)
+            return intent
         }
-      }
     }
-  }
 
-  override fun onResume() {
-    super.onResume()
-    EventBus.getDefault().register(this)
-  }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_food)
 
-  override fun onPause() {
-    super.onPause()
-    EventBus.getDefault().unregister(this)
-  }
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
-  @Suppress("UNUSED_PARAMETER")
-  @Subscribe(threadMode = ThreadMode.MAIN)
-  fun onCartEvent(event: CartEvent) {
-    val food = presenter.getFood(intent.extras.getInt(EXTRA_FOOD_ID))
-    val isInCart = food?.isInCart ?: false
-    fab.setImageResource(if (isInCart) R.drawable.ic_done else R.drawable.ic_add)
-    toast(if (isInCart) getString(R.string.added_to_cart) else getString(R.string.removed_from_cart))
-  }
+        presenter = Injection.provideFoodPresenter(this)
+
+        val food = presenter.getFood(intent.extras.getInt(EXTRA_FOOD_ID))
+
+        food?.let {
+            foodImage.setImageResource(resources.getIdentifier(food.largeImage, null, packageName))
+            collapsingToolbar.title = food.name
+            collapsingToolbar.setExpandedTitleColor(ContextCompat.getColor(this, android.R.color.transparent))
+            foodName.text = food.name
+            foodDescription.text = food.description
+            fab.setImageResource(if (food.isInCart) R.drawable.ic_done else R.drawable.ic_add)
+            moreInfo.setOnClickListener {
+                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(food.link))
+                startActivity(browserIntent)
+            }
+            fab.setOnClickListener {
+                if (food.isInCart) {
+                    presenter.removeItem(food)
+                } else {
+                    presenter.addItem(food)
+                }
+            }
+            foodImage.setOnClickListener {
+                val rotateAndScaleAnimations = AnimationUtils.loadAnimation(this, R.anim.rotate_and_scale)
+                foodImage.startAnimation(rotateAndScaleAnimations)
+                monster.visibility = VISIBLE
+              rotateAndScaleAnimations.setAnimationListener(object: Animation.AnimationListener{
+                override fun onAnimationRepeat(p0: Animation?) {
+
+                }
+
+                override fun onAnimationEnd(p0: Animation?) {
+                  monster.visibility = INVISIBLE
+                }
+
+                override fun onAnimationStart(p0: Animation?) {
+
+                }
+
+              })
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        EventBus.getDefault().register(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        EventBus.getDefault().unregister(this)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onCartEvent(event: CartEvent) {
+        val food = presenter.getFood(intent.extras.getInt(EXTRA_FOOD_ID))
+        val isInCart = food?.isInCart ?: false
+        fab.setImageResource(if (isInCart) R.drawable.ic_done else R.drawable.ic_add)
+        toast(if (isInCart) getString(R.string.added_to_cart) else getString(R.string.removed_from_cart))
+    }
 }
