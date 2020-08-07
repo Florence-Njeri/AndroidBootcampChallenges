@@ -31,13 +31,19 @@
 
 package com.raywenderlich.android.foodmart.ui.items
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import com.raywenderlich.android.foodmart.R
 import com.raywenderlich.android.foodmart.model.Food
@@ -52,98 +58,152 @@ import org.greenrobot.eventbus.ThreadMode
 
 
 class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.ItemsAdapterListener {
-
-  override lateinit var presenter: ItemsContract.Presenter
-  private val adapter = ItemsAdapter(mutableListOf(), this)
-
-  private var itemCount: TextView? = null
-  private var itemCountCircle: FrameLayout? = null
-
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_items)
-
-    presenter = Injection.provideItemsPresenter(this)
-
-    setupRecyclerView()
-    setupCartIcon()
-  }
-
-  private fun setupCartIcon() {
-    // Add an OnGlobalLayoutListener to allow creating cart icon correctly in lifecycle
-    itemsRootView.viewTreeObserver.addOnGlobalLayoutListener {
-      itemCount = findViewById(R.id.itemCount)
-      itemCountCircle = findViewById(R.id.itemCountCircle)
-      updateCartIcon()
+    companion object {
+        const val DURATION = 500L
     }
-  }
 
-  private fun setupRecyclerView() {
-    itemsRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
-    itemsRecyclerView.adapter = adapter
-  }
+    override lateinit var presenter: ItemsContract.Presenter
+    private val adapter = ItemsAdapter(mutableListOf(), this)
 
-  override fun onStart() {
-    super.onStart()
-    EventBus.getDefault().register(this)
-  }
+    private var itemCount: TextView? = null
+    private var itemCountCircle: FrameLayout? = null
 
-  override fun onStop() {
-    super.onStop()
-    EventBus.getDefault().unregister(this)
-  }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_items)
 
-  override fun onCreateOptionsMenu(menu: Menu): Boolean {
-    super.onCreateOptionsMenu(menu)
-    menuInflater.inflate(R.menu.activity_items, menu)
-    val item = menu.findItem(R.id.cart_menu_item)
-    item.actionView.setOnClickListener { menu.performIdentifierAction(item.itemId, 0) }
-    return true
-  }
+        presenter = Injection.provideItemsPresenter(this)
 
-  override fun onOptionsItemSelected(item: MenuItem): Boolean {
-    when (item.itemId) {
-      R.id.cart_menu_item -> startActivity(CartActivity.newIntent(this))
-      R.id.add_all_menu_item -> presenter.addAllToCart()
-      R.id.remove_all_menu_item -> presenter.clearCart()
-      R.id.categories_menu_item -> showCategories()
+        setupRecyclerView()
+        setupCartIcon()
     }
-    return super.onOptionsItemSelected(item)
-  }
 
-  private fun showCategories() {
-    startActivity(CategoriesActivity.newIntent(this))
-  }
+    private fun setupCartIcon() {
+        // Add an OnGlobalLayoutListener to allow creating cart icon correctly in lifecycle
+        itemsRootView.viewTreeObserver.addOnGlobalLayoutListener {
+            itemCount = findViewById(R.id.itemCount)
+            itemCountCircle = findViewById(R.id.itemCountCircle)
+            updateCartIcon()
+        }
+    }
 
-  private fun updateCartIcon() {
-    val cartSize = presenter.cartSize()
-    itemCount?.text = "$cartSize"
-    itemCountCircle?.visibility = if (cartSize > 0) View.VISIBLE else View.INVISIBLE
-  }
+    private fun setupRecyclerView() {
+        itemsRecyclerView.layoutManager = LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false)
+        itemsRecyclerView.adapter = adapter
+    }
 
-  override fun onResume() {
-    super.onResume()
-    presenter.start()
-  }
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+    }
 
-  override fun showItems(items: List<Food>) {
-    adapter.updateItems(items)
-  }
+    override fun onStop() {
+        super.onStop()
+        EventBus.getDefault().unregister(this)
+    }
 
-  override fun removeItem(item: Food) {
-    presenter.removeItem(item)
-  }
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.activity_items, menu)
+        val item = menu.findItem(R.id.cart_menu_item)
+        item.actionView.setOnClickListener { menu.performIdentifierAction(item.itemId, 0) }
+        return true
+    }
 
-  override fun addItem(item: Food) {
-    presenter.addItem(item)
-  }
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.cart_menu_item -> startActivity(CartActivity.newIntent(this))
+            R.id.add_all_menu_item -> presenter.addAllToCart()
+            R.id.remove_all_menu_item -> presenter.clearCart()
+            R.id.categories_menu_item -> showCategories()
+        }
+        return super.onOptionsItemSelected(item)
+    }
 
-  @Suppress("UNUSED_PARAMETER")
-  @Subscribe(threadMode = ThreadMode.MAIN)
-  fun onCartEvent(event: CartEvent) {
-    updateCartIcon()
-    adapter.notifyDataSetChanged()
-  }
+    private fun showCategories() {
+        startActivity(CategoriesActivity.newIntent(this))
+    }
+
+    private fun updateCartIcon() {
+        val cartSize = presenter.cartSize()
+        itemCount?.text = "$cartSize"
+        itemCountCircle?.visibility = if (cartSize > 0) View.VISIBLE else View.INVISIBLE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        presenter.start()
+    }
+
+    override fun showItems(items: List<Food>) {
+        adapter.updateItems(items)
+    }
+
+    override fun removeItem(item: Food) {
+        presenter.removeItem(item)
+    }
+
+    override fun addItem(item: Food, foodImageView: ImageView, cartButton: ImageView) {
+        //Get the position f the food image and the item count circle
+        val foodImagePosition = getPositionOf(foodImageView)
+        val itemCountCirclePosition = getPositionOf(itemCountCircle)
+
+        val foodImageSize = resources.getDimension(R.dimen.list_item_height).toInt()
+
+        val viewToAnimate = setUpViewToAnimate(item, foodImageView, foodImageSize)
+        itemsRootView.addView(viewToAnimate)
+        val xAnimator = objectAnimatorOfFloat(viewToAnimate, "x", foodImagePosition[0].toFloat(), itemCountCirclePosition[0].toFloat() - foodImageSize / 2)
+        val yAnimator = objectAnimatorOfFloat(viewToAnimate, "y", foodImagePosition[1].toFloat(), itemCountCirclePosition[1].toFloat() - foodImageSize / 2)
+        val alphaAnimator = objectAnimatorOfFloat(viewToAnimate, "alpha", 0f, 1f)
+        //Disable the cartButton
+        cartButton.isEnabled = false
+        AnimatorSet().apply {
+            play(xAnimator).with(yAnimator).with(alphaAnimator)
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(p0: Animator?) {
+                    presenter.addItem(item)
+                    itemsRootView.removeView(viewToAnimate)
+                    //Enable the cart button when the animation ends
+                    cartButton.isEnabled = true
+                }
+            })
+            start()
+
+        }
+        setUpViewToAnimate(item, foodImageView, foodImageSize)
+
+    }
+
+    private fun getPositionOf(view: View?): IntArray {
+        val position = intArrayOf(0, 0)
+        view?.getLocationOnScreen(position)
+        return position
+    }
+
+    private fun objectAnimatorOfFloat(view: View, propertyName: String, startValue: Float, endValue: Float): ObjectAnimator {
+        val animator = ObjectAnimator.ofFloat(view, propertyName, startValue, endValue)
+        animator.interpolator = AccelerateDecelerateInterpolator()
+        animator.duration = DURATION
+        return animator
+    }
+
+    private fun setUpViewToAnimate(item: Food, imageView: ImageView, imageSize: Int): ImageView {
+        val viewToAnimate = ImageView(this)
+        viewToAnimate.setImageResource(resources.getIdentifier(item.thumbnail, null, packageName))
+        val layoutParams = imageView.layoutParams
+        layoutParams.height = imageSize
+        layoutParams.width = imageSize
+        viewToAnimate.layoutParams = layoutParams
+        viewToAnimate.alpha = 0f
+        return viewToAnimate
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onCartEvent(event: CartEvent) {
+        updateCartIcon()
+        adapter.notifyDataSetChanged()
+    }
 }
 
 

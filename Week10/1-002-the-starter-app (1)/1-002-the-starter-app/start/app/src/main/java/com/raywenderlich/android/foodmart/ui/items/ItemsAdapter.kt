@@ -34,6 +34,7 @@ package com.raywenderlich.android.foodmart.ui.items
 import android.support.v7.widget.RecyclerView
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import com.raywenderlich.android.foodmart.R
 import com.raywenderlich.android.foodmart.app.inflate
 import com.raywenderlich.android.foodmart.model.Food
@@ -43,52 +44,52 @@ import kotlinx.android.synthetic.main.list_item_food.view.*
 
 class ItemsAdapter(private val items: MutableList<Food>, private val listener: ItemsAdapterListener) : RecyclerView.Adapter<ItemsAdapter.ViewHolder>() {
 
-  override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-    ViewHolder(parent.inflate(R.layout.list_item_food))
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
+            ViewHolder(parent.inflate(R.layout.list_item_food))
 
-  override fun onBindViewHolder(holder: ItemsAdapter.ViewHolder, position: Int) {
-    holder.bind(items[position])
-  }
-
-  override fun getItemCount() = items.size
-
-  fun updateItems(items: List<Food>) {
-    this.items.clear()
-    this.items.addAll(items)
-    notifyDataSetChanged()
-  }
-
-  inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
-
-    private lateinit var item: Food
-
-    init {
-      itemView.setOnClickListener(this)
+    override fun onBindViewHolder(holder: ItemsAdapter.ViewHolder, position: Int) {
+        holder.bind(items[position])
     }
 
-    fun bind(item: Food) {
-      this.item = item
-      val context = itemView.context
-      itemView.foodImage.setImageResource(context.resources.getIdentifier(item.thumbnail, null, context.packageName))
-      itemView.name.text = item.name
-      itemView.cartButton.setImageResource(if (item.isInCart) R.drawable.ic_done else R.drawable.ic_add)
-      itemView.cartButton.setOnClickListener {
-        if (item.isInCart) {
-          listener.removeItem(item)
-        } else {
-          listener.addItem(item)
+    override fun getItemCount() = items.size
+
+    fun updateItems(items: List<Food>) {
+        this.items.clear()
+        this.items.addAll(items)
+        notifyDataSetChanged()
+    }
+
+    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
+
+        private lateinit var item: Food
+
+        init {
+            itemView.setOnClickListener(this)
         }
-      }
+
+        fun bind(item: Food) {
+            this.item = item
+            val context = itemView.context
+            itemView.foodImage.setImageResource(context.resources.getIdentifier(item.thumbnail, null, context.packageName))
+            itemView.name.text = item.name
+            itemView.cartButton.setImageResource(if (item.isInCart) R.drawable.ic_done else R.drawable.ic_add)
+            itemView.cartButton.setOnClickListener {
+                if (item.isInCart) {
+                    listener.removeItem(item)
+                } else {
+                    listener.addItem(item, itemView.foodImage, itemView.cartButton)
+                }
+            }
+        }
+
+        override fun onClick(view: View) {
+            val context = view.context
+            context.startActivity(FoodActivity.newIntent(context, item.id))
+        }
     }
 
-    override fun onClick(view: View) {
-      val context = view.context
-      context.startActivity(FoodActivity.newIntent(context, item.id))
+    interface ItemsAdapterListener {
+        fun removeItem(item: Food)
+        fun addItem(item: Food, foodImageView: ImageView, cartButton: ImageView)
     }
-  }
-
-  interface ItemsAdapterListener {
-    fun removeItem(item: Food)
-    fun addItem(item: Food)
-  }
 }
