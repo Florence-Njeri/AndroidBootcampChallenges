@@ -32,6 +32,7 @@
 package com.raywenderlich.android.foodmart.ui.items
 
 import android.animation.*
+import android.graphics.drawable.Animatable
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.app.ActivityOptionsCompat
@@ -141,9 +142,24 @@ class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.Item
         adapter.updateItems(items)
     }
 
-    override fun removeItem(item: Food) {
-        presenter.removeItem(item)
-        cartIconAnimatorSet().start()
+    /**TODO*/
+    override fun removeItem(item: Food, cartButton: ImageView) {
+        animateCartButton(cartButton, false)
+        cartIconAnimatorSet().apply {
+            addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator?) {
+                    super.onAnimationEnd(animation)
+                    presenter.removeItem(item)
+                }
+            })
+            start()
+        }
+    }
+
+    private fun animateCartButton(cartButton: ImageView, morphToDone: Boolean) {
+        cartButton.setImageResource(if (morphToDone) R.drawable.ic_morph else R.drawable.ic_morph_reverse)
+        val animatable = cartButton.drawable as Animatable
+        animatable.start()
     }
 
     override fun showDetailsFood(view: View, food: Food) {
@@ -151,8 +167,8 @@ class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.Item
         val imagePair = Pair.create(foodImage as View, "tImage")
 //        val namePair = Pair.create(foodName as View, "tFoodName")
         //Make the activity transitions
-        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this,imagePair)
-        ActivityCompat.startActivity(this,FoodActivity.newIntent(this, food.id),options.toBundle())
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this, imagePair)
+        ActivityCompat.startActivity(this, FoodActivity.newIntent(this, food.id), options.toBundle())
 
     }
 
@@ -184,8 +200,8 @@ class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.Item
             start()
 
         }
-        setUpViewToAnimate(item, foodImageView, foodImageSize)
-
+        animateCartButton(cartButton, true)
+//        setUpViewToAnimate(item, foodImageView, foodImageSize)
     }
 
     private fun getPositionOf(view: View?): IntArray {
