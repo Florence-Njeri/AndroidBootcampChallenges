@@ -152,7 +152,5 @@ class CartActivity : AppCompatActivity(), CartContract.View, CartAdapter.CartAda
         val x = paymentMethodContainer.width / 2
         val y = paymentMethodContainer.height - checkoutButton.height
         val radius = Math.hypot(x.toDouble(), y.toDouble()).toFloat()
-
-
     }
 }
