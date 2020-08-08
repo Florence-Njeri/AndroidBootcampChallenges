@@ -33,6 +33,9 @@ package com.raywenderlich.android.foodmart.ui.items
 
 import android.animation.*
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
+import android.support.v4.app.ActivityOptionsCompat
+import android.support.v4.util.Pair
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.view.Menu
@@ -48,6 +51,8 @@ import com.raywenderlich.android.foodmart.model.events.CartEvent
 import com.raywenderlich.android.foodmart.ui.Injection
 import com.raywenderlich.android.foodmart.ui.cart.CartActivity
 import com.raywenderlich.android.foodmart.ui.categories.CategoriesActivity
+import com.raywenderlich.android.foodmart.ui.detail.FoodActivity
+import kotlinx.android.synthetic.main.activity_food.*
 import kotlinx.android.synthetic.main.activity_items.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
@@ -139,6 +144,16 @@ class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.Item
     override fun removeItem(item: Food) {
         presenter.removeItem(item)
         cartIconAnimatorSet().start()
+    }
+
+    override fun showDetailsFood(view: View, food: Food) {
+        //Set up the shared image transition
+        val imagePair = Pair.create(foodImage as View, "tImage")
+        val namePair = Pair.create(foodName as View, "tFoodName")
+        //Make the activity transitions
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this,imagePair,namePair)
+        ActivityCompat.startActivity(this,FoodActivity.newIntent(this, food.id),options.toBundle())
+
     }
 
     override fun addItem(item: Food, foodImageView: ImageView, cartButton: ImageView) {

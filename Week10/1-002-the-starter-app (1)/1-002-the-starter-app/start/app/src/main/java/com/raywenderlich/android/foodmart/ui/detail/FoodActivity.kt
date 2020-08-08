@@ -37,8 +37,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.view.View.INVISIBLE
-import android.view.View.VISIBLE
+import android.view.View.*
 import android.view.animation.Animation
 import android.view.animation.AnimationUtils
 import com.raywenderlich.android.foodmart.R
@@ -97,20 +96,20 @@ class FoodActivity : AppCompatActivity(), FoodContract.View {
                 val rotateAndScaleAnimations = AnimationUtils.loadAnimation(this, R.anim.rotate_and_scale)
                 foodImage.startAnimation(rotateAndScaleAnimations)
                 monster.visibility = VISIBLE
-              rotateAndScaleAnimations.setAnimationListener(object: Animation.AnimationListener{
-                override fun onAnimationRepeat(p0: Animation?) {
+                rotateAndScaleAnimations.setAnimationListener(object : Animation.AnimationListener {
+                    override fun onAnimationRepeat(p0: Animation?) {
 
-                }
+                    }
 
-                override fun onAnimationEnd(p0: Animation?) {
-                  monster.visibility = INVISIBLE
-                }
+                    override fun onAnimationEnd(p0: Animation?) {
+                        monster.visibility = INVISIBLE
+                    }
 
-                override fun onAnimationStart(p0: Animation?) {
+                    override fun onAnimationStart(p0: Animation?) {
 
-                }
+                    }
 
-              })
+                })
             }
         }
     }
@@ -123,6 +122,11 @@ class FoodActivity : AppCompatActivity(), FoodContract.View {
     override fun onPause() {
         super.onPause()
         EventBus.getDefault().unregister(this)
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        fab.visibility = GONE
     }
 
     @Suppress("UNUSED_PARAMETER")
