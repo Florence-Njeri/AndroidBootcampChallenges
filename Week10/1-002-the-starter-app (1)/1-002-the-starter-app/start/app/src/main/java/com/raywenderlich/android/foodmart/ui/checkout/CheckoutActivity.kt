@@ -31,22 +31,68 @@
 
 package com.raywenderlich.android.foodmart.ui.checkout
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.support.animation.DynamicAnimation
+import android.support.animation.SpringAnimation
+import android.support.animation.SpringForce
 import android.support.v7.app.AppCompatActivity
+import android.view.MotionEvent
 import com.raywenderlich.android.foodmart.R
+import kotlinx.android.synthetic.main.activity_checkout.*
 
 class CheckoutActivity : AppCompatActivity() {
+    private var xPositionDiff = 0f
+    private var yPositionDiff = 0f
+    private val springForce: SpringForce by lazy {
+        SpringForce(0f).apply {
+            stiffness = SpringForce.STIFFNESS_MEDIUM
+            dampingRatio = SpringForce.DAMPING_RATIO_HIGH_BOUNCY
+        }
 
-  companion object {
-    fun newIntent(context: Context) = Intent(context, CheckoutActivity::class.java)
-  }
+    }
+    private val springAnimationX: SpringAnimation by lazy {
+        SpringAnimation(donut, DynamicAnimation.TRANSLATION_X).setSpring(springForce)
+    }
+    private val springAnimationY: SpringAnimation by lazy {
+        SpringAnimation(donut, DynamicAnimation.TRANSLATION_Y).setSpring(springForce)
+    }
 
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    setContentView(R.layout.activity_checkout)
+    companion object {
+        fun newIntent(context: Context) = Intent(context, CheckoutActivity::class.java)
+    }
 
-    title = getString(R.string.checkout_title)
-  }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_checkout)
+
+        title = getString(R.string.checkout_title)
+        //Add a spring animation to the Donut
+        setDonutTouchListener()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setDonutTouchListener() {
+        donut.setOnTouchListener { view, motionEvent ->
+            when (motionEvent?.action) {
+                MotionEvent.ACTION_DOWN -> {
+                    xPositionDiff = motionEvent.rawX - view.x
+                    yPositionDiff = motionEvent.rawY - view.y
+                    springAnimationX.cancel()
+                    springAnimationY.cancel()
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    donut.x = motionEvent.rawX - xPositionDiff
+                    donut.y = motionEvent.rawY - yPositionDiff
+                }
+                MotionEvent.ACTION_UP -> {
+                    springAnimationX.start()
+                    springAnimationY.start()
+                }
+            }
+            true
+        }
+    }
 }
