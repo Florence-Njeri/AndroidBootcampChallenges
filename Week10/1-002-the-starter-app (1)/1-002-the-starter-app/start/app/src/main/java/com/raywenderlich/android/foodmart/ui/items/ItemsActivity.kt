@@ -149,9 +149,9 @@ class ItemsActivity : AppCompatActivity(), ItemsContract.View, ItemsAdapter.Item
     override fun showDetailsFood(view: View, food: Food) {
         //Set up the shared image transition
         val imagePair = Pair.create(foodImage as View, "tImage")
-        val namePair = Pair.create(foodName as View, "tFoodName")
+//        val namePair = Pair.create(foodName as View, "tFoodName")
         //Make the activity transitions
-        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this,imagePair,namePair)
+        val options = ActivityOptionsCompat.makeSceneTransitionAnimation(this,imagePair)
         ActivityCompat.startActivity(this,FoodActivity.newIntent(this, food.id),options.toBundle())
 
     }
