@@ -31,14 +31,17 @@
 
 package com.raywenderlich.android.foodmart.ui.cart
 
-import android.animation.ObjectAnimator
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.widget.LinearLayoutManager
 import android.view.View
+import android.view.View.GONE
 import android.view.View.VISIBLE
+import android.view.ViewAnimationUtils
 import com.raywenderlich.android.foodmart.R
 import com.raywenderlich.android.foodmart.model.Food
 import com.raywenderlich.android.foodmart.model.events.CartDeleteItemEvent
@@ -124,20 +127,32 @@ class CartActivity : AppCompatActivity(), CartContract.View, CartAdapter.CartAda
         presenter.loadCart(false)
     }
 
-    //Animate the Cart Payment Checkout button
-    private fun animatePaymentMethodContainer(startValue: Float, endValue: Float) {
-
-        val animator = ObjectAnimator.ofFloat(paymentMethodContainer, "translationY", startValue, endValue)
-        animator.duration = 500
-        animator.start()
-    }
-
     private fun animateShwPaymentMethodContainer() {
+
+        val clipInfo = PaymentMethodClipInfo()
+        val anim = ViewAnimationUtils.createCircularReveal(paymentMethodContainer, clipInfo.x, clipInfo.y, 0f, clipInfo.radius)
         paymentMethodContainer.visibility = VISIBLE
-        animatePaymentMethodContainer(paymentMethodContainer.height.toFloat(), 0F)
+        anim.start()
     }
 
     private fun animateHidePaymentMethodsContainer() {
-        animatePaymentMethodContainer(0F, paymentMethodContainer.height.toFloat())
+        val clipInfo = PaymentMethodClipInfo()
+        val anim = ViewAnimationUtils.createCircularReveal(paymentMethodContainer, clipInfo.x, clipInfo.y, clipInfo.radius, 0f)
+        anim.addListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator?) {
+                super.onAnimationEnd(animation)
+                paymentMethodContainer.visibility = GONE
+            }
+        })
+        anim.start()
+    }
+
+    //Animate the Cart Payment Checkout button
+    private inner class PaymentMethodClipInfo {
+        val x = paymentMethodContainer.width / 2
+        val y = paymentMethodContainer.height - checkoutButton.height
+        val radius = Math.hypot(x.toDouble(), y.toDouble()).toFloat()
+
+
     }
 }
