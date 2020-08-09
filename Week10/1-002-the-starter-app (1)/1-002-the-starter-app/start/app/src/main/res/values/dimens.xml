@@ -17,4 +17,6 @@
   <dimen name="payment_method_size">100dp</dimen>
   <dimen name="payment_method_container_height">160dp</dimen>
     <dimen name="donut_size">64dp</dimen>
+  <dimen name="block_width">100dp</dimen>
+  <dimen name="block_height">20dp</dimen>
 </resources>
