@@ -3,6 +3,8 @@ package com.raywenderlich.spacedaily.di
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.raywenderlich.spacedaily.BuildConfig
 import com.raywenderlich.spacedaily.network.NASAAPIInterface
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -10,6 +12,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import retrofit2.Retrofit
+import retrofit2.converter.moshi.MoshiConverterFactory
 import java.util.concurrent.TimeUnit
 
 val networkModule = module {
@@ -32,12 +35,18 @@ val networkModule = module {
         }
         client.build()
     }
+    //Moshi
+    single {
+        Moshi.Builder()
+            .add(KotlinJsonAdapterFactory())
+            .build()
+    }
     //Create Retrofit
     single {
         val contentType = "application/json".toMediaType()
         Retrofit.Builder()
             .baseUrl(get<String>(named("BASE_URL")))
-            .addConverterFactory(Json.asConverterFactory(contentType))
+            .addConverterFactory(MoshiConverterFactory.create(get()))
             .client(get())
             .build()
     }
